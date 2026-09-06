@@ -94,6 +94,42 @@ def _dispatch_workflow(name):
 
 _git_lock = threading.Lock()
 
+# 06/09/2026 : « Actualiser depuis Instagram » semblait ne rien faire (Laurie) — la chaîne GitHub →
+# autopull (2 min) marchait mais restait muette 2 à 6 min. Désormais : suivi d'étapes + pull rapide.
+FEEDSYNC = {"en_cours": False, "etape": "", "debut": 0, "fin": 0, "resultat": ""}
+
+
+def _feedsync_suivi(maj_avant, head_avant):
+    import time as _tm
+    fp = os.path.join(ROOT, "engine", "feed-instagram.json")
+    FEEDSYNC.update(en_cours=True, etape="1/3 · GitHub interroge Instagram", debut=_tm.time(), fin=0, resultat="")
+    deadline = _tm.time() + 420
+    n = 0
+    while _tm.time() < deadline:
+        _tm.sleep(15)
+        n += 1
+        if n >= 3:
+            FEEDSYNC["etape"] = "2/3 · récupération du feed"
+        try:
+            with _git_lock:
+                subprocess.run(["git", "pull", "--rebase", "--autostash"],
+                               cwd=ROOT, timeout=90, capture_output=True, text=True)
+            head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+            msg = subprocess.run(["git", "log", "-1", "--format=%s"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+        except Exception:
+            head, msg = head_avant, ""
+        try:
+            maj = json.load(open(fp)).get("maj", "")
+        except Exception:
+            maj = ""
+        if maj and maj != maj_avant:
+            FEEDSYNC.update(en_cours=False, etape="3/3 · feed à jour", fin=_tm.time(), resultat="ok")
+            return
+        if head != head_avant and msg.startswith("inspection"):
+            FEEDSYNC.update(en_cours=False, etape="3/3 · rien de nouveau", fin=_tm.time(), resultat="identique")
+            return
+    FEEDSYNC.update(en_cours=False, etape="", fin=_tm.time(), resultat="timeout")
+
 
 def _git_sync(message):
     """Chaque action Cockpit (approve/reject/swap/...) est poussée sur GitHub immédiatement.
@@ -293,7 +329,7 @@ class Handler(SimpleHTTPRequestHandler):
                 "pending": list_state("pending"),
                 "approved": list_state("approved"),
                 "published": list_state("published"),
-                "feed": feed, "feed_maj": feed_maj,
+                "feed": feed, "feed_maj": feed_maj, "feedsync": FEEDSYNC,
             })
         return super().do_GET()
 
@@ -484,8 +520,17 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path == "/api/feed_refresh":
             # Laurie vient de poster depuis son mobile : on demande au robot cloud
             # (feedsync) une photo fraîche du vrai compte ; l'autopull la ramènera.
+            if FEEDSYNC["en_cours"]:
+                return self._json({"ok": True, "deja": True})
             ok, err = _dispatch_workflow("inspection.yml")
             if ok:
+                fp = os.path.join(ENGINE, "feed-instagram.json")
+                try:
+                    maj_avant = json.load(open(fp)).get("maj", "")
+                except Exception:
+                    maj_avant = ""
+                head_avant = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+                threading.Thread(target=_feedsync_suivi, args=(maj_avant, head_avant), daemon=True).start()
                 return self._json({"ok": True})
             return self._json({"error": err}, 502)
 

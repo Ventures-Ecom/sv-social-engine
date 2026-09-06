@@ -189,6 +189,7 @@ async function load(){
   const allIds = [...j.pending, ...j.approved, ...j.published].map(x => x.id);
   if (knownIds === null) knownIds = new Set(allIds);
   DATA = j;
+  feedSyncWatch(j);
   for (const s of ["pending","approved"])
     document.getElementById("n-"+s).textContent = "· " + j[s].length;
   document.getElementById("genai").disabled = j.generating;
@@ -297,7 +298,7 @@ function render(){
     const syncNote = realFeed.length ? `<br>📲 Synchronisé avec le vrai compte (y compris tes posts mobiles) — dernière synchro : ${DATA.feed_maj || "?"}.` : "";
     g.innerHTML = `<div class="ig-note">Ta grille telle qu'elle apparaîtra sur Instagram (le n°1 part en premier, donc finit en bas).<br>
       ✓ = déjà publié sur le vrai compte, figé. Flèches / glisser = réorganiser ce qui n'est pas encore parti.${syncNote}<br>
-      <button class="genbtn" id="curbtn" onclick="curate()">🔀 Nouvelle proposition de la curatrice</button> <button class="genbtn" onclick="orderUndo()">↩ Version précédente</button> <button class="genbtn" id="feedrefbtn" onclick="feedRefresh()">🔄 Actualiser depuis Instagram</button> ${archBtn}
+      <button class="genbtn" id="curbtn" onclick="curate()">🔀 Nouvelle proposition de la curatrice</button> <button class="genbtn" onclick="orderUndo()">↩ Version précédente</button> ${feedBtn()} ${archBtn}
       <div id="curnote" style="color:#a8977f;margin-top:8px;font-size:12px"></div></div>
       <div class="ig">` + grid.map(it => {
         const gi = all.indexOf(it);
@@ -460,13 +461,31 @@ async function progItem(state, id){
   if (res.ok){ toast(quand.trim() ? "🕐 Horaire enregistré : " + quand : "↩ Retour en automatique"); render(); }
   else toast("⚠️ " + (res.error || "échec"));
 }
+function feedBtn(){
+  const fs = DATA.feedsync || {};
+  if (fs.en_cours){
+    const sec = Math.max(0, Math.round(Date.now()/1000 - (fs.debut||0)));
+    return `<button class="genbtn" id="feedrefbtn" disabled>⏳ ${fs.etape || "synchro…"} · ${sec}s</button>`;
+  }
+  return `<button class="genbtn" id="feedrefbtn" onclick="feedRefresh()">🔄 Actualiser depuis Instagram</button>`;
+}
+let SYNC_PREV = false;
+function feedSyncWatch(j){
+  const fs = j.feedsync || {};
+  if (SYNC_PREV && !fs.en_cours){
+    if (fs.resultat === "ok") toast("✅ Feed Instagram à jour — tes posts mobiles sont là");
+    else if (fs.resultat === "identique") toast("✅ Synchro faite : Instagram n'avait rien de nouveau (ton post est peut-être encore en traitement chez Instagram, réessaie dans 1 min)");
+    else if (fs.resultat === "timeout") toast("⚠️ Synchro sans réponse après 7 min — vérifie la connexion internet, puis réessaie");
+  }
+  SYNC_PREV = !!fs.en_cours;
+}
 async function feedRefresh(){
   const b = document.getElementById("feedrefbtn");
   b.disabled = true; b.textContent = "⏳ SYNCHRO DEMANDÉE…";
   try {
     const r = await fetch("/api/feed_refresh", {method: "POST", body: "{}"});
     const res = await r.json();
-    if (res.ok) toast("📲 Synchro lancée — ton vrai feed (avec ton réel) apparaît ici d'ici 2 à 3 min, la page se met à jour toute seule");
+    if (res.ok) { toast("📲 Synchro lancée — suis les 3 étapes sur le bouton, ça prend 2 à 5 min, la page se met à jour toute seule"); setTimeout(load, 1000); }
     else toast("⚠️ " + (res.error || "échec de la demande"));
   } catch(e){ toast("⚠️ Le moteur local ne répond pas"); }
   setTimeout(() => { b.disabled = false; b.textContent = "🔄 Actualiser depuis Instagram"; }, 8000);
