@@ -1,0 +1,23 @@
+[
+  {
+    "error": "pas d'image dans la réponse: {'candidates': [{'finishReason': 'IMAGE_SAFETY', 'index': 0, 'finishMes"
+  },
+  {
+    "dress_identical": false,
+    "invented_details": [
+      "entirely different garment (black lace dress)",
+      "spaghetti straps",
+      "sheer lace sleeves"
+    ],
+    "skin_natural": true,
+    "face_consistent": true,
+    "verdict": "fail"
+  },
+  {
+    "dress_identical": true,
+    "invented_details": [],
+    "skin_natural": true,
+    "face_consistent": true,
+    "verdict": "pass"
+  }
+]

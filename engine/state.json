@@ -1,11 +1,15 @@
 {
-  "used_captions": [],
+  "used_captions": [
+    "New season, new silhouettes ~ {name}, online now."
+  ],
   "used_products": [
     "coat-ebony",
     "gala-the-siren-hourglass-gown",
-    "the-irena-timeless-lace-trim-maxi-dress"
+    "the-irena-timeless-lace-trim-maxi-dress",
+    "bretonne-the-cozy-striped-knit",
+    "sweater-zoe"
   ],
-  "last_scene": "nuit-interieure-bordeaux",
+  "last_scene": "townhouse-londonien",
   "gen_month": "2026-07",
   "gen_calls": 2
 }
