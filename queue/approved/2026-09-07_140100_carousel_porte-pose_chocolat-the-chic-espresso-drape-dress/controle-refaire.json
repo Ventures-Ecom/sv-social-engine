@@ -1,0 +1,68 @@
+[
+  {
+    "slide-2.jpg essai 1 (trois_quarts)": {
+      "controle": {
+        "dress_identical": true,
+        "invented_details": [],
+        "skin_natural": true,
+        "face_consistent": true,
+        "verdict": "pass"
+      },
+      "portee": true,
+      "plan_ok": true,
+      "lieu": false,
+      "doublon": false
+    }
+  },
+  {
+    "slide-2.jpg essai 2 (trois_quarts)": {
+      "controle": {
+        "dress_identical": true,
+        "invented_details": [],
+        "skin_natural": true,
+        "face_consistent": true,
+        "verdict": "pass"
+      },
+      "portee": true,
+      "plan_ok": true,
+      "lieu": false,
+      "doublon": false
+    }
+  },
+  {
+    "slide-2.jpg essai 1": "pas d'image"
+  },
+  {
+    "slide-2.jpg essai 2": "pas d'image"
+  },
+  {
+    "slide-2.jpg essai 1 (closeup_matiere)": {
+      "controle": {
+        "dress_identical": true,
+        "invented_details": [],
+        "skin_natural": true,
+        "face_consistent": true,
+        "verdict": "pass"
+      },
+      "portee": true,
+      "plan_ok": true,
+      "lieu": false,
+      "doublon": false
+    }
+  },
+  {
+    "slide-2.jpg essai 2 (closeup_matiere)": {
+      "controle": {
+        "dress_identical": true,
+        "invented_details": [],
+        "skin_natural": true,
+        "face_consistent": true,
+        "verdict": "pass"
+      },
+      "portee": true,
+      "plan_ok": true,
+      "lieu": false,
+      "doublon": false
+    }
+  }
+]
