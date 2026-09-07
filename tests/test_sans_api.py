@@ -20,6 +20,8 @@ import apprendre  # noqa: E402
 import generate as core  # noqa: E402
 import generate_ai as g  # noqa: E402
 import purge  # noqa: E402
+os.environ.setdefault("IG_USER_ID", "x"); os.environ.setdefault("IG_ACCESS_TOKEN", "x"); os.environ.setdefault("ASSET_BASE_URL", "http://x")
+import publish  # noqa: E402
 
 PRODUITS = [
     {"title": "Vespera — The Velvet Gown", "handle": "vespera-the-velvet-gown"},
@@ -111,6 +113,25 @@ class ModeTest(unittest.TestCase):
         g._budget_guard()
         apres = open(bp).read() if os.path.exists(bp) else None
         self.assertEqual(avant, apres)
+
+
+class Publieur(unittest.TestCase):
+    def test_slides_conformes_ignore_essais_et_retirees(self):
+        with tempfile.TemporaryDirectory() as d:
+            for f in ("slide-1.jpg", "slide-3.jpg", "essai-slide-2_dos-1-recale.jpg", "retiree-slide-2.jpg", "ref-1.jpg"):
+                open(os.path.join(d, f), "w").write("x")
+            self.assertEqual(publish.slides_conformes(d), ["slide-1.jpg", "slide-3.jpg"])
+
+    def test_alerte_publication_visible(self):
+        ap = os.path.join(ROOT, "engine", "alertes-publication.json")
+        existait = os.path.exists(ap)
+        try:
+            publish._alerte_publication("2026-09-07_101100_carousel_tour_ruby-the-midnight-muse-gown", "carrousel avec 1 slide conforme")
+            a = json.load(open(ap))
+            self.assertEqual(a["alertes"][-1]["motif"], "carrousel avec 1 slide conforme")
+        finally:
+            if not existait and os.path.exists(ap):
+                os.remove(ap)
 
 
 class Purge(unittest.TestCase):

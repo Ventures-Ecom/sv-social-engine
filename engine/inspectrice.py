@@ -121,6 +121,17 @@ def main():
             except Exception as e:
                 ALERTES.append(f"Impossible de vérifier le lot hebdo : {str(e)[:80]}")
 
+    # 0 quater bis. contenus écartés par le publieur (déjà publié, carrousel incomplet, produit disparu) — 07/09/2026
+    try:
+        pp = os.path.join(ENGINE, "alertes-publication.json")
+        if os.path.exists(pp):
+            a = json.load(open(pp))
+            if a.get("date", "") >= (now - timedelta(days=8)).strftime("%Y-%m-%d"):
+                for x in a.get("alertes", [])[-5:]:
+                    ALERTES.append(f"Publieur : {x.get('item', '?')[:45]} — {x.get('motif', '')}")
+    except Exception:
+        pass
+
     # 0 quater. alertes laissées par le dernier lot (briefs ignorés, lot de secours) — 07/09/2026
     try:
         ap = os.path.join(ENGINE, "alertes-generation.json")

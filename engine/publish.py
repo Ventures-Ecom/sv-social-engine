@@ -176,6 +176,39 @@ def final_check(folder):
         return True, f"contrôle indisponible ({e}), publication par défaut"
 
 
+def slides_conformes(folder):
+    """Slides qui partiront réellement (mêmes règles que publish_item) — 07/09/2026 : un carrousel de test
+    n'avait qu'une slide conforme (10 essais recalés) → Instagram refuse un carrousel à 1 enfant."""
+    import re as _re
+    return sorted(f for f in os.listdir(folder) if _re.match(r"^slide-\d+\.jpg$", f))
+
+
+def catalogue_handles():
+    """Handles du catalogue Shopify en ligne (None si injoignable → on ne bloque pas)."""
+    try:
+        sys.path.insert(0, os.path.join(ROOT, "engine"))
+        import generate as core
+        prods = core.fetch_products()
+        return {p.get("handle") for p in prods if p.get("handle")}, prods
+    except Exception as e:
+        print("catalogue injoignable, contrôle produit sauté :", str(e)[:80])
+        return None, []
+
+
+def _alerte_publication(item, motif):
+    """Un contenu écarté ne l'est jamais en silence : engine/alertes-publication.json (lu par l'inspectrice)."""
+    from datetime import datetime as _d, timezone as _tz
+    ap = os.path.join(ROOT, "engine", "alertes-publication.json")
+    try:
+        a = json.load(open(ap)) if os.path.exists(ap) else {"alertes": []}
+    except Exception:
+        a = {"alertes": []}
+    a["date"] = _d.now(_tz.utc).isoformat(timespec="minutes")
+    a["alertes"] = ([x for x in a.get("alertes", []) if x.get("item") != item] + [{"item": item, "motif": motif}])[-20:]
+    json.dump(a, open(ap, "w"), indent=2, ensure_ascii=False)
+    print(f"⚠️ {item} : {motif}")
+
+
 def main():
     os.makedirs(PUBLISHED, exist_ok=True)
     # RÈGLE DURE : maximum 1 publication par jour (védé du 29/07 — double post évité)
@@ -232,12 +265,26 @@ def main():
         print("Rien d'éligible sur ce créneau.")
         sys.exit(0)
 
+    handles, prods = catalogue_handles()
     for source, item, needs_check in candidates:
         folder = os.path.join(source, item)
         if not os.path.exists(os.path.join(folder, "meta.json")):
             print(f"⚠️ {item} : meta.json manquant (dossier incomplet) — on passe au suivant.")
             continue
         _m = json.load(open(os.path.join(folder, "meta.json")))
+        # 07/09/2026 (audit) — trois garde-fous AVANT tout appel Instagram, chacun visible dans le Cockpit :
+        if _m.get("instagram_id"):
+            _alerte_publication(item, f"déjà publié sur Instagram (media {_m['instagram_id']}) mais resté en file — vérifier, ne pas republier")
+            continue
+        if _m.get("type") == "carousel" and len(slides_conformes(folder)) < 2:
+            _alerte_publication(item, f"carrousel avec {len(slides_conformes(folder))} slide conforme (slide-N.jpg) : Instagram exige au moins 2 — à compléter ou rejeter")
+            continue
+        if handles is not None:
+            import generate as core
+            h = core.handle_du_dossier(item, prods) or core.handle_du_dossier(item)
+            if h and h not in handles:
+                _alerte_publication(item, f"produit « {h} » absent du catalogue inaya-paris.com — on ne publie pas une pièce introuvable en boutique")
+                continue
         if _m.get("programme", "") and _m["programme"] > maintenant:
             print(f"🕐 {item} : programmé par Laurie pour le {_m['programme']} — on passe au suivant.")
             continue
@@ -265,6 +312,12 @@ def main():
         print("Publication de", item, "(source:", os.path.basename(source) + ")")
         res = publish_item(folder)
         print("OK, media id:", res.get("id"))
+        try:  # trace de publication dans le dossier AVANT le déplacement : plus jamais de doublon si le push échoue
+            _m["instagram_id"] = res.get("id")
+            _m["publie_le"] = maintenant
+            json.dump(_m, open(os.path.join(folder, "meta.json"), "w"), indent=2, ensure_ascii=False)
+        except Exception:
+            pass
         shutil.move(folder, os.path.join(PUBLISHED, item))
         json.dump({"derniere_publication": aujourdhui}, open(psp, "w"))
         break

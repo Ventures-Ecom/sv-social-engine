@@ -38,7 +38,7 @@ jobs:
           for i in 1 2 3; do
             if git push; then ok=1; break; fi
             echo "push refuse (tentative $i) - rebase puis retry"
-            git pull --rebase --autostash || true
+            git pull --rebase --autostash || { echo "rebase impossible - abandon puis nouvelle tentative"; git rebase --abort 2>/dev/null || true; }
             sleep $((i * 5))
           done
           [ "$ok" = "1" ] || { echo "::error::push impossible apres 3 tentatives (course git persistante)"; exit 1; }
