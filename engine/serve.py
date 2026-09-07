@@ -5,6 +5,7 @@ Lancement : double-clic sur "SV Cockpit.command" (ou python3 engine/serve.py)
 puis http://localhost:8765
 """
 import json
+import sys
 import re
 import os
 import shutil
@@ -424,10 +425,25 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json({"ok": True})
 
         if self.path == "/api/generate_ai":
+            produit = (data.get("produit") or "").strip()
+            if produit:
+                # 07/09/2026 (Laurie) : on vérifie les noms contre le catalogue AVANT de lancer quoi que ce soit
+                try:
+                    sys.path.insert(0, ENGINE)
+                    import generate as _core
+                    prods = [p for p in _core.fetch_products() if p.get("images")]
+                    trouves, introuvables, sugg = _core.resoudre_produits(prods, produit)
+                except Exception as e:
+                    return self._json({"ok": False, "error": f"catalogue injoignable ({type(e).__name__})"}, 500)
+                if introuvables:
+                    return self._json({"ok": False, "introuvables": introuvables, "suggestions": sugg,
+                                       "trouves": [_core.first_name(p["title"]) for p in trouves]})
+                produit = ", ".join(_core.first_name(p["title"]) for p in trouves)
+                data["trouves"] = [p["title"] for p in trouves]
             run_generate.ai_mode = True
-            run_generate.produit = (data.get("produit") or "").strip()
+            run_generate.produit = produit
             threading.Thread(target=run_generate, daemon=True).start()
-            return self._json({"ok": True})
+            return self._json({"ok": True, "trouves": data.get("trouves", [])})
 
         if self.path == "/api/committee":
             def _run():

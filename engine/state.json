@@ -4,7 +4,9 @@
     "Warm neutrals, sculpted lines, {name}.",
     "Three ways to meet {name}.",
     "{name}, but make it after dark.",
-    "Swipe for the full story. {name}."
+    "Swipe for the full story. {name}.",
+    "{name} ~ quiet on the hanger, unforgettable on.",
+    "Which look are you? ~"
   ],
   "used_products": [
     "coat-ebony",
@@ -13,10 +15,13 @@
     "bretonne-the-cozy-striped-knit",
     "sweater-zoe",
     "jacket-noa",
-    "sweater-calyss"
+    "sweater-calyss",
+    "wide-leg-tailored-pants-divinea",
+    "bourgeoise-dress",
+    "luxury-dress"
   ],
-  "last_scene": "cafe-parisien-soir",
+  "last_scene": "studio-blanc",
   "gen_month": "2026-07",
   "gen_calls": 2,
-  "last_plan_seq": 0
+  "last_plan_seq": 1
 }

@@ -16,16 +16,17 @@ plan_path = os.path.join(ENGINE, "plan-semaine.json")
 plan = json.load(open(plan_path)) if os.path.exists(plan_path) else []
 
 def find_product(nom):
-    nom = (nom or "").lower().strip()
-    for p in products:
-        if nom and nom in p["title"].lower():
-            return p
-    return None
+    return core.find_product(products, nom)
 
 cible = (os.environ.get("GEN_PRODUIT") or "").strip()
 if cible:
-    p = find_product(cible)
-    if p:
+    trouves, introuvables, sugg = core.resoudre_produits(products, cible)
+    if introuvables:
+        # 07/09/2026 (Laurie) : un nom inconnu = on N'INVENTE PAS un autre produit et on ne dépense rien
+        msg = "⚠️ introuvable : " + ", ".join(introuvables) + (" (peut-être : " + ", ".join(sugg) + ")" if sugg else "")
+        print(msg)
+        g._progress(msg)
+    for p in trouves:
         print(f"génération ciblée demandée par Laurie : {p['title']}")
         g._progress(f"post demandé — {p['title'][:40]}")
         g.make_model_post(p, captions, state, key)
@@ -34,10 +35,10 @@ if cible:
         g._progress(f"carrousel demandé — {p['title'][:40]}")
         g.make_carousel_tour(p, captions, state, key)
         core.save_state(state)
+    if not introuvables:
         g._progress("")
-        print("post + carrousel ciblés produits ✅")
-        raise SystemExit(0)
-    print(f"⚠️ produit « {cible} » introuvable dans le catalogue — lot normal à la place")
+    print(f"{len(trouves)} produit(s) ciblé(s) : post + carrousel ✅" if trouves else "rien généré")
+    raise SystemExit(0)
 
 executed = 0
 for brief in plan[:4]:

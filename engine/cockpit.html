@@ -472,11 +472,24 @@ document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
   b.classList.add("on"); TAB = b.dataset.t; render();
 });
 document.getElementById("genai").onclick = async () => {
-  const produit = prompt("Un vêtement précis ?\nTape son nom (ex : Chocolat, Zoé, Ambre…) — ou laisse VIDE pour laisser le moteur choisir selon la saison.", "");
+  const produit = prompt("Quel(s) vêtement(s) ?\nUn ou plusieurs prénoms séparés par des virgules (ex : Chocolat, Zoé, Vespera). Accents sans importance.\nChaque nom = 1 post + 1 carrousel (≈ 0,25 $). Laisse VIDE pour laisser le moteur choisir selon la saison.", "");
   if (produit === null) return;
-  await fetch("/api/generate_ai", {method: "POST", body: JSON.stringify({produit: produit.trim()})});
+  const r = await fetch("/api/generate_ai", {method: "POST", body: JSON.stringify({produit: produit.trim()})});
+  const j = await r.json().catch(() => ({ok: false, error: "réponse illisible"}));
+  if (!j.ok){
+    if (j.introuvables){
+      alert("Rien n'a été lancé (aucune dépense).\n\nIntrouvable dans le catalogue : " + j.introuvables.join(", ")
+        + (j.suggestions && j.suggestions.length ? "\nTu voulais dire : " + j.suggestions.join(", ") + " ?" : "")
+        + (j.trouves && j.trouves.length ? "\n\nReconnu : " + j.trouves.join(", ") + " (relance avec les noms corrigés)" : ""));
+    } else {
+      alert("Rien n'a été lancé : " + (j.error || "erreur inconnue"));
+    }
+    return;
+  }
   document.getElementById("genbar").classList.add("on");
-  toast("Génération lancée — 1 post + 1 carrousel (4 à 6 photos) dans 10 à 15 min");
+  const n = (j.trouves || []).length;
+  toast(n ? `Génération lancée pour ${n} vêtement(s) : ${j.trouves.map(t => t.split(/[–—-]/)[0].trim()).join(", ")} — ${n} post(s) + ${n} carrousel(s) dans ${10*n} à ${15*n} min`
+          : "Génération lancée — 1 post + 1 carrousel (4 à 6 photos) dans 10 à 15 min");
   setTimeout(load, 2000);
 };
 

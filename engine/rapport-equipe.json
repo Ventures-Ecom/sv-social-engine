@@ -1,26 +1,140 @@
 {
-  "date": "2026-09-01T13:51+00:00",
-  "nb_posts": 2,
+  "date": "2026-09-07T14:56+00:00",
+  "nb_posts": 11,
   "social_media_manager": {
-    "erreur": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage",
-    "raison": "⛽ Crédits Google AI Studio épuisés : recharge sur ai.studio/projects, puis reclique."
+    "strategie": "Diversification chromatique vers des teintes automnales riches (olive, ambre, bleu nuit) pour sortir du bordeaux répétitif, en intégrant enfin la robe Vespera exigée par la fondatrice et un duo complice de saison.",
+    "plan_prochain_lot": [
+      {
+        "robe": "Vespera",
+        "format": "carrousel_tour",
+        "concept": "L'heure dorée",
+        "ambiance": "Cour intérieure en calcaire parisien au soleil couchant. Une muse portant la robe Vespera vert olive : vue trois-quarts chic, focus matière sur le drapé, puis départ de dos."
+      },
+      {
+        "robe": "Ambre",
+        "format": "mannequin_pipeline",
+        "concept": "Le geste figé",
+        "ambiance": "Duo complice de mannequins devant les arcades du Palais-Royal en fin d'après-midi. Teintes ambre et bronze satinées, mouvement capturé en pleine marche."
+      },
+      {
+        "robe": "Nocturne",
+        "format": "carrousel_lineup",
+        "concept": "L'ombre portée narrative",
+        "ambiance": "Salon privé parisien aux murs chocolat. Même muse en robe Nocturne bleu nuit répétée sur fond studio continu avec ombre portée de persiennes et numérotation manuscrite."
+      }
+    ],
+    "ton_legendes": "Épuré, sophistiqué et confidentiel en anglais, invitant subtilement à la sauvegarde pour les événements de rentrée."
   },
   "directrice_artistique": {
-    "erreur": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage",
-    "raison": "⛽ Crédits Google AI Studio épuisés : recharge sur ai.studio/projects, puis reclique."
+    "verdicts": [
+      {
+        "numero": 1,
+        "da_ok": true,
+        "note": "Drapé fluide chocolat et lumière architecturale parfaitement ancrés dans la saison automnale."
+      },
+      {
+        "numero": 2,
+        "da_ok": true,
+        "note": "Superbe tension visuelle en cadrage fragmenté mettant en valeur la transparence du tulle bordeaux."
+      },
+      {
+        "numero": 3,
+        "da_ok": true,
+        "note": "Posture sculpturale sous une lumière chaude valorisant le drapé ivoire et la dentelle."
+      },
+      {
+        "numero": 4,
+        "da_ok": false,
+        "note": "Robe mini d'été trop dénudée et hors sujet pour le marché automnal de septembre."
+      },
+      {
+        "numero": 5,
+        "da_ok": true,
+        "note": "Belle texture de maille automnale mise en valeur par un cadrage produit affirmé."
+      },
+      {
+        "numero": 6,
+        "da_ok": false,
+        "note": "Lumière plate, fond gris froid et absence de concept visuel fort sur ce portrait centré."
+      },
+      {
+        "numero": 7,
+        "da_ok": true,
+        "note": "Geste naturel capturé sous une lumière directionnelle qui sublime les tons bordeaux."
+      },
+      {
+        "numero": 8,
+        "da_ok": false,
+        "note": "Le tricot à rayures bleues est strictement hors de la palette de couleurs Inaya."
+      },
+      {
+        "numero": 9,
+        "da_ok": true,
+        "note": "Ambiance parisienne du soir parfaitement maîtrisée avec de magnifiques reflets chaleureux."
+      },
+      {
+        "numero": 10,
+        "da_ok": true,
+        "note": "Tension visuelle de profil réussie sur fond de terrasse avec une ombre marquée."
+      },
+      {
+        "numero": 11,
+        "da_ok": true,
+        "note": "Magnifique jeu d'ombre et de lumière latérale sublimant le contraste noir et ivoire."
+      }
+    ],
+    "avis_global": "La grille incarne très bien l'esprit Heure Bleue avec des matières palpables et des éclairages sculpturaux. Il faut néanmoins éliminer la pièce bleue hors palette et le look estival dénudé pour préserver la cohérence de saison."
   },
   "curatrice_grille": {
-    "erreur": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage",
-    "raison": "⛽ Crédits Google AI Studio épuisés : recharge sur ai.studio/projects, puis reclique."
+    "ordre_ideal": [
+      3,
+      1,
+      2,
+      4,
+      7,
+      6,
+      8,
+      10,
+      11,
+      9,
+      5
+    ],
+    "raison": "Cette réorganisation établit un flux chromatique fluide des tons clairs et chocolatés vers les bordeaux profonds, tout en alternant rigoureusement les cadrages (large, moyen, détail). La séquence se clôt sur une rupture textile maîtrisée avec la maille verte, respectant parfaitement la cadence de curation."
   },
   "responsable_marque": {
-    "erreur": "Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage",
-    "raison": "⛽ Crédits Google AI Studio épuisés : recharge sur ai.studio/projects, puis reclique."
+    "histoire_ok": false,
+    "manque": "La séquence ressemble à un empilement déséquilibré : la robe Ruby est trop répétée (5 posts) tandis que des mailles casual s'insèrent sans transition narrative. Il manque une véritable mise en valeur des matières nobles, des détails de confection et de l'univers feutré des moments d'exception.",
+    "legendes_a_revoir": [
+      {
+        "numero": 1,
+        "suggestion": "Movement sculpted in deep tones ~ The Espresso dress."
+      },
+      {
+        "numero": 3,
+        "suggestion": "Delicate lace tailored for memorable nights ~ The Héloïse."
+      },
+      {
+        "numero": 4,
+        "suggestion": "An effortless silhouette for your next occasion ~ Alizée."
+      },
+      {
+        "numero": 5,
+        "suggestion": "Soft knit textures for quiet moments ~ The Zoé."
+      },
+      {
+        "numero": 6,
+        "suggestion": "The art of subtle drape ~ Ruby."
+      },
+      {
+        "numero": 11,
+        "suggestion": "Monochrome contrast for timeless evenings ~"
+      }
+    ]
   },
   "controleuse_budget": {
-    "images_gemini_ce_mois": "20/200",
-    "estimation_gemini": "~0.80 EUR",
+    "images_gemini_ce_mois": "163/200",
+    "estimation_gemini": "~6.52 EUR",
     "note": "Plafond dur actif : la machine s'arrete seule au plafond. Passes Magnific ~0,10 EUR/image en credits separes."
   },
-  "ordre_applique": false
+  "ordre_applique": true
 }

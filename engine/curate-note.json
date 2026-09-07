@@ -1,11 +1,15 @@
 {
   "ordre_libres": [
-    28,
-    29,
     27,
+    28,
     31,
-    30
+    35,
+    32,
+    34,
+    33,
+    30,
+    29
   ],
-  "raison": "Ce parti pris installe un rythme rythmé et contrasté en faisant directement transition du vert olive vers l'espresso chaleureux, suivi d'une respiration blanche puis du noir profond. La séquence enchaîne ensuite sur les mailles texturées vert forêt et rayée marine pour amorcer une transition douce vers un vestiaire plus contemporain.",
+  "raison": "Glissement chromatique continu depuis les tons terreux (chocolat, vert forêt) vers l'intensité sombre du bordeaux de la mini-série Ruby, avant un retour progressif au clair via la maille rayée puis le blanc. L'agencement alterne régulièrement pièces en maille et robes de soirée pour un rythme visuel dynamique.",
   "applique": true
 }

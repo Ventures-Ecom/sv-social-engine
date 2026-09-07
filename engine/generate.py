@@ -66,6 +66,48 @@ def first_name(title):
     return t.split("-")[0].strip().title()
 
 
+def norm_nom(s):
+    """Minuscules, sans accents ni ponctuation : « Vespéra » == « vespera » (bug Laurie 07/09/2026)."""
+    import unicodedata
+    s = unicodedata.normalize("NFKD", (s or "").lower())
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9 ]+", " ", s).strip()
+
+
+def decoupe_noms(texte):
+    """« Chocolat, Zoé / Ambre et Vespéra » -> ['Chocolat', 'Zoé', 'Ambre', 'Vespéra']."""
+    parts = re.split(r"[,;/\n]+|\s+(?:et|and|&|\+)\s+", texte or "")
+    return [x.strip() for x in parts if x and x.strip()]
+
+
+def find_product(products, nom):
+    """Prénom exact d'abord (avant le tiret), puis sous-chaîne ; accents ignorés."""
+    n = norm_nom(nom)
+    if not n:
+        return None
+    for p in products:
+        if norm_nom(first_name(p["title"])) == n:
+            return p
+    for p in products:
+        if n in norm_nom(p["title"]):
+            return p
+    return None
+
+
+def resoudre_produits(products, texte):
+    """Renvoie (trouves, introuvables, suggestions) pour un texte à plusieurs noms."""
+    trouves, introuvables, sugg = [], [], []
+    for nom in decoupe_noms(texte):
+        p = find_product(products, nom)
+        if p and p not in trouves:
+            trouves.append(p)
+        elif not p:
+            introuvables.append(nom)
+            n = norm_nom(nom)[:3]
+            sugg += [first_name(x["title"]) for x in products if n and norm_nom(first_name(x["title"])).startswith(n)][:4]
+    return trouves, introuvables, sorted(set(sugg))
+
+
 def fetch_image(src, width=1400):
     src = re.sub(r"(\.\w+)(\?|$)", rf"_{width}x\1\2", src, count=1)
     return Image.open(io.BytesIO(curl(src))).convert("RGB")

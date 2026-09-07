@@ -58,5 +58,13 @@
   "ruby-the-midnight-muse-gown": {
     "ok": 3,
     "echec": 0
+  },
+  "bourgeoise-dress": {
+    "ok": 1,
+    "echec": 0
+  },
+  "luxury-dress": {
+    "ok": 1,
+    "echec": 0
   }
 }
