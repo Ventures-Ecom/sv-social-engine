@@ -517,6 +517,26 @@ class Handler(SimpleHTTPRequestHandler):
                 _git_sync_bg(f"archive {moved} posts")
             return self._json({"ok": True, "archives": moved})
 
+        if self.path == "/api/reorder":
+            # 07/09/2026 (Laurie) : déplacement à la souris dans l'aperçu — on reçoit l'ordre complet voulu d'une file
+            state, ids = data.get("state"), data.get("ids") or []
+            base = Q(state)
+            if not ids or any("/" in i or ".." in i or not os.path.isdir(os.path.join(base, i)) for i in ids):
+                return self._json({"error": "la grille vient de changer — recharge la page"}, 400)
+            existants = sorted(d for d in os.listdir(base) if os.path.isdir(os.path.join(base, d)) and d.count("_") >= 2)
+            if sorted(ids) != existants:
+                return self._json({"error": "la grille vient de changer — recharge la page"}, 409)
+            date = ids[0].split("_", 1)[0]
+            tmp = {}
+            for i, old in enumerate(ids):  # passage par des noms temporaires : aucune collision possible
+                t = os.path.join(base, f"__reorder_{i}_{old.split('_', 2)[2]}")
+                os.rename(os.path.join(base, old), t); tmp[i] = (t, old.split("_", 2)[2].strip())
+            for i, (t, reste) in tmp.items():
+                reste = re.sub(r" \d+$", "", reste)
+                os.rename(t, os.path.join(base, f"{date}_{i * 100 + 100100:06d}_{reste}"))
+            _git_sync_bg(f"reorder {state}")
+            return self._json({"ok": True})
+
         if self.path == "/api/swap":
             a, sa, b, sb = data.get("a"), data.get("stateA"), data.get("b"), data.get("stateB")
             # 07/09/2026 : deux dossiers avec le MÊME horodatage (ou un suffixe « 2 » Finder) faisaient échouer l'échange

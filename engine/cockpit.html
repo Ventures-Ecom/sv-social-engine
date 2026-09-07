@@ -58,6 +58,8 @@ button{border:0;border-radius:5px;padding:9px 0;font-size:11.5px;letter-spacing:
 @keyframes slide{0%{margin-left:-30%}100%{margin-left:100%}}
 .ig{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;max-width:520px;margin:0 auto;background:#000}
 .ig .cell{position:relative;aspect-ratio:3/4;overflow:hidden}
+.ig .cell.drag{cursor:grab}
+.ig .cell.over{outline:3px solid #d4a24c;outline-offset:-3px}
 .ig img,.ig video{width:100%;height:100%;object-fit:cover;object-position:top;aspect-ratio:auto;max-height:none}
 .ig .num{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.65);color:#fff;font-size:10px;padding:2px 7px;border-radius:9px}
 .ig .mv{position:absolute;bottom:6px;right:6px;display:flex;gap:4px}
@@ -324,9 +326,8 @@ function render(){
         if (gi < pub.length)
           return `<div class="cell" style="opacity:.92">${med}<span class="num">${gi+1}</span><span class="num" style="left:auto;right:6px;background:#2e5c3f">✓ PUBLIÉ</span></div>`;
         const idx = gi - pub.length;
-        const up = idx > 0 ? `<span onclick="swapItems(${idx},${idx-1})" title="publier plus tôt">◀</span>` : "";
-        const down = idx < order.length-1 ? `<span onclick="swapItems(${idx},${idx+1})" title="publier plus tard">▶</span>` : "";
-        return `<div class="cell" draggable="true" ondragstart="dragFrom=${idx}" ondragover="event.preventDefault()" ondrop="swapItems(dragFrom,${idx})">${med}<span class="num">${gi+1}</span><div class="mv">${up}${down}</div></div>`;
+        // 07/09/2026 (Laurie) : plus de flèches — on attrape la vignette à la souris et on la lâche à sa nouvelle place
+        return `<div class="cell drag" draggable="true" title="Glisse-moi pour changer l'ordre de publication" ondragstart="dragFrom=${idx};this.style.opacity=.4" ondragend="this.style.opacity=1" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="this.classList.remove('over');moveItem(dragFrom,${idx})">${med}<span class="num">${gi+1}</span></div>`;
       }).join("") + `</div>`;
     return;
   }
@@ -532,6 +533,25 @@ async function publishNow(){
 }
 
 let SWAPPING = false;
+async function moveItem(i, j){
+  if (SWAPPING || i === null || i === j) return;
+  const order = publishOrder();
+  const A = order[i], B = order[j];
+  if (!A || !B){ toast("⚠️ La grille vient de changer — réessaie"); load(); return; }
+  if (A.state !== B.state){ toast("⚠️ On ne déplace qu'entre contenus du même état (validés entre eux, en attente entre eux)"); return; }
+  const ids = order.filter(x => x.state === A.state).map(x => x.id);
+  const from = ids.indexOf(A.id), to = ids.indexOf(B.id);
+  ids.splice(to, 0, ids.splice(from, 1)[0]);
+  SWAPPING = true;
+  try {
+    const r = await fetch("/api/reorder", {method: "POST", body: JSON.stringify({state: A.state, ids})});
+    const res = await r.json().catch(() => ({}));
+    if (!r.ok || res.error) toast("⚠️ Déplacement refusé : " + (res.error || r.status));
+    else toast("↔ Ordre de publication mis à jour");
+  } catch(e){ toast("⚠️ Le moteur local ne répond pas"); }
+  await load();
+  SWAPPING = false;
+}
 async function swapItems(i, j){
   if (SWAPPING) return;                     // un échange à la fois — les clics rapides ne se perdent plus en silence
   const order = publishOrder();
