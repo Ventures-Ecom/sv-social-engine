@@ -13,9 +13,9 @@
       "controle": {
         "dress_identical": true,
         "invented_details": [],
-        "skin_natural": true,
+        "skin_natural": false,
         "face_consistent": true,
-        "verdict": "pass"
+        "verdict": "fail"
       },
       "portee": true,
       "plan_ok": true,
@@ -33,7 +33,9 @@
       "controle": {
         "dress_identical": false,
         "invented_details": [
-          "prominent center-back vertical ruched seam"
+          "spaghetti straps",
+          "corset lacing on back",
+          "exposed back zipper"
         ],
         "skin_natural": true,
         "face_consistent": true,
@@ -53,11 +55,14 @@
   {
     "slide-3.jpg essai 2 (dos)": {
       "controle": {
-        "dress_identical": true,
-        "invented_details": [],
+        "dress_identical": false,
+        "invented_details": [
+          "thin shoulder straps",
+          "exposed back zipper"
+        ],
         "skin_natural": true,
         "face_consistent": true,
-        "verdict": "pass"
+        "verdict": "fail"
       },
       "portee": true,
       "plan_ok": true,
@@ -71,20 +76,24 @@
     }
   },
   {
-    "slide-4.jpg essai 1 (marche)": {
+    "slide-3.jpg essai 3 (dos)": {
       "controle": {
-        "dress_identical": true,
-        "invented_details": [],
+        "dress_identical": false,
+        "invented_details": [
+          "spaghetti straps",
+          "corset back lacing",
+          "exposed back zipper"
+        ],
         "skin_natural": true,
         "face_consistent": true,
-        "verdict": "pass"
+        "verdict": "fail"
       },
       "portee": true,
       "plan_ok": true,
       "meme_lieu": true,
       "doublon_slide1": false,
       "lu": {
-        "type": "marche",
+        "type": "dos",
         "same_location": true,
         "near_duplicate": false
       }
