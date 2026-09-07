@@ -1,0 +1,51 @@
+[
+  {
+    "slide-1 essai 1": {
+      "dress_identical": true,
+      "invented_details": [],
+      "skin_natural": true,
+      "face_consistent": true,
+      "verdict": "pass"
+    }
+  },
+  {
+    "slide-2.jpg essai 1 (trois_quarts)": {
+      "controle": {
+        "dress_identical": true,
+        "invented_details": [],
+        "skin_natural": true,
+        "face_consistent": true,
+        "verdict": "pass"
+      },
+      "portee": true,
+      "plan_ok": false,
+      "meme_lieu": true,
+      "doublon_slide1": true,
+      "lu": {
+        "type": "assise",
+        "same_location": true,
+        "near_duplicate": true
+      }
+    }
+  },
+  {
+    "slide-2.jpg essai 2 (trois_quarts)": {
+      "controle": {
+        "dress_identical": true,
+        "invented_details": [],
+        "skin_natural": true,
+        "face_consistent": true,
+        "verdict": "pass"
+      },
+      "portee": true,
+      "plan_ok": false,
+      "meme_lieu": true,
+      "doublon_slide1": true,
+      "lu": {
+        "type": "assise",
+        "same_location": true,
+        "near_duplicate": true
+      }
+    }
+  }
+]

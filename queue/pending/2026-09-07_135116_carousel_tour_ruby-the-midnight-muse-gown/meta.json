@@ -1,0 +1,12 @@
+{
+  "type": "carousel",
+  "caption": "[TEST refonte 07/09 — à regarder, ne pas publier] Test refonte v1 (07/09) : slide 2 = doublon de la 1, slide 3 assise de face dans un autre lieu au lieu de « dos » — corr",
+  "alt": "Recette « tour du produit » (séquence 1) : the Ruby, full length → three-quarter → from behind — same muse, same place, same light, garment always worn.",
+  "recette": "tour_du_produit",
+  "plans": [
+    "plein_pied",
+    "trois_quarts",
+    "dos"
+  ],
+  "rejet": "Test refonte v1 (07/09) : slide 2 = doublon de la 1, slide 3 assise de face dans un autre lieu au lieu de « dos » — corrigé (vérification du plan + même lieu + anti-doublon)"
+}
