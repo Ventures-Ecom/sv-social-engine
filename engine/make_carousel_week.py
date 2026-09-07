@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Carrousel de secours (règle : 2/semaine garantis) — recette fondatrice « porté + posé »,
-la plus fiable ; si elle échoue, tentative « lookbook aligné »."""
+"""Carrousel de secours (règle : 2/semaine garantis) — recette « tour du produit » (07/09/2026) ;
+si elle échoue, tentative « lookbook aligné ». La robe est tirée hors des robes déjà en file."""
 import sys, os
 ENGINE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ENGINE)

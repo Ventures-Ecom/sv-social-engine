@@ -24,15 +24,45 @@ def cle_api():
     raise SystemExit("clé manquante")
 
 
+def autre_robe_citee(raison, handle, products):
+    """Prénom d'une AUTRE robe du catalogue citée dans la raison, sinon None.
+    07/09/2026 (bug Vespéra) : « J'ai demandé la vespéra dress » sur un post Bourgeoise avait gravé, sur la robe
+    Bourgeoise, l'ordre de dessiner la Vespéra — contamination durable de l'apprentissage par un incident ponctuel."""
+    import re
+    sys.path.insert(0, ENGINE)
+    import generate as core
+    r = " " + core.norm_nom(raison) + " "
+    mienne = next((p for p in products if p.get("handle") == handle), None)
+    mon_nom = core.norm_nom(core.first_name(mienne["title"])) if mienne else ""
+    for p in products:
+        n = core.norm_nom(core.first_name(p.get("title", "")))
+        if n and len(n) >= 3 and n != mon_nom and re.search(r"(?<![a-z0-9])" + re.escape(n) + r"(?![a-z0-9])", r):
+            return core.first_name(p["title"])
+    return None
+
+
 def main(item, raison):
     if not raison or raison == "sans raison donnée":
         return
-    handle = item.split("_", 2)[2].partition("_")[2] if item.count("_") >= 3 else ""
+    try:
+        sys.path.insert(0, ENGINE)
+        import generate as core
+        produits = core.fetch_products()
+    except Exception:
+        produits = []
+    # 07/09/2026 (audit) : « carousel_tour_<handle> » donnait le handle « tour_<handle> » — on passe par le catalogue
+    import generate as core
+    handle = core.handle_du_dossier(item, produits)
+    autre = autre_robe_citee(raison, handle, produits)
+    if autre:
+        print(f"leçon NON gravée : la raison parle d'une autre robe (« {autre} ») que celle rejetée ({handle or '?'}) — "
+              "incident ponctuel, pas une règle de génération")
+        return
     prompt = ("A founder rejected an AI-generated fashion image. Dress handle: '" + (handle or "unknown") +
               "'. Her rejection reason (French): «" + raison + "». "
               "Distill ONE short imperative English rule (max 25 words) to add to the image-generation prompt so this "
               "exact mistake NEVER happens again. Decide the scope: GLOBAL (applies to all images) or DRESS (only this dress). "
-              "If the reason is purely one-off taste with no generalizable rule, answer SKIP. "
+              "If the reason is purely one-off taste with no generalizable rule, or if it names a DIFFERENT product than this dress, answer SKIP. "
               'Answer ONLY in JSON: {"rule": "... or SKIP", "scope": "GLOBAL or DRESS"}')
     body = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode()
     req = urllib.request.Request(

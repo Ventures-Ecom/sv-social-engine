@@ -1,3 +1,9 @@
+> ⚠️ **Ce README décrit la V1 de juillet 2026 (sans IA générative, lot du lundi, page Facebook).** Il n'est plus exact.
+> Le fonctionnement réel au 07/09/2026 : lot IA généré le **dimanche 18h23 Paris** (`generate.yml`), publication
+> lun/mer/ven 19h Paris (`publish.yml`, cron horaire + cron-job.org), 3 contenus/semaine (1 post + 2 carrousels),
+> Cockpit local `engine/serve.py`. Mode test sans dépense : `SV_FAKE_GEMINI=1`. Tests : `python3 -m unittest tests/test_sans_api.py`.
+> Nettoyage : `python3 engine/purge.py` (simulation) puis `--apply`.
+
 # SV Social Engine
 
 Usine Instagram autonome de Shadow Velora. Tourne dans le cloud (GitHub Actions),

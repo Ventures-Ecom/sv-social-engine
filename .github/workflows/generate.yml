@@ -30,6 +30,8 @@ jobs:
           git config user.name "sv-engine"
           git config user.email "engine@shadowvelora.com"
           git add queue engine/state.json engine/budget.json
+          git add engine/alertes-generation.json 2>/dev/null || true
+          git add -u engine/alertes-generation.json 2>/dev/null || true
           git commit -m "lot hebdo $(date -u +%F)" || echo "rien à committer"
           ok=0
           for i in 1 2 3; do

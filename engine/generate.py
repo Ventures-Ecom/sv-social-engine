@@ -323,8 +323,53 @@ NON_PORTABLE = ("bag", "tote", "clutch", "jewel", "necklace", "earring",
                 "bracelet", "shoe", "heel", "sandal", "boot", "hat", "accessor", "candle", "sunglass")
 
 
+RECETTES_CARROUSEL = ("tour", "porte-pose", "muse", "lookbook", "lineup")
+
+
+def handle_du_dossier(nom, products=None):
+    """Handle de la robe à partir d'un nom de dossier « date_heure_type[_recette]_handle[ 2] ».
+    Avec le catalogue : le handle le plus long qui termine le nom (fiable). Sans catalogue : on retire
+    le type et, pour un carrousel, sa recette (tour, porte-pose, muse, lookbook, lineup)."""
+    nom = re.sub(r" \d+$", "", nom.strip())
+    if products:
+        for p in sorted(products, key=lambda x: -len(x.get("handle", ""))):
+            h = p.get("handle", "")
+            if h and nom.endswith("_" + h):
+                return h
+    if nom.count("_") < 3:
+        return ""
+    reste = nom.split("_", 2)[2]
+    parts = reste.split("_")
+    if parts[0] == "carousel" and len(parts) > 2 and parts[1] in RECETTES_CARROUSEL:
+        return "_".join(parts[2:])
+    return "_".join(parts[1:])
+
+
+def handles_en_file(root=ROOT, products=None):
+    """Handles des robes déjà dans queue/pending et queue/approved → {handle: {'post'|'carousel', …}}.
+    Sert la règle d'alternance (07/09/2026 : 5 carrousels Ruby d'affilée dans la file)."""
+    out = {}
+    for st in ("pending", "approved"):
+        base = os.path.join(root, "queue", st)
+        if not os.path.isdir(base):
+            continue
+        for it in os.listdir(base):
+            if not os.path.isdir(os.path.join(base, it)):
+                continue
+            handle = handle_du_dossier(it, products)
+            if not handle:
+                continue
+            kind = "carousel" if it.split("_", 2)[-1].startswith("carousel") else "post"
+            out.setdefault(handle, set()).add(kind)
+    return out
+
+
 def pick_products(products, state, n):
     products = [p for p in products if p.get("handle") not in _blacklist()]
+    # règle d'alternance : une robe déjà en file (pending/approved) n'est pas retirée au sort
+    deja = handles_en_file(products=products)
+    if len([p for p in products if p.get("handle") not in deja]) >= n:
+        products = [p for p in products if p.get("handle") not in deja]
     # le pipeline image met en scène des vêtements portés : jamais d'accessoires
     products = [p for p in products
                 if not any(k in (p.get("title", "") + " " + p.get("product_type", "")).lower()

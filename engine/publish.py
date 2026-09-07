@@ -180,9 +180,11 @@ def main():
     os.makedirs(PUBLISHED, exist_ok=True)
     # RÈGLE DURE : maximum 1 publication par jour (védé du 29/07 — double post évité)
     from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo as _ZI
     psp = os.path.join(ROOT, "engine", "publish-state.json")
     ps = json.load(open(psp)) if os.path.exists(psp) else {}
-    aujourdhui = _dt.utcnow().strftime("%Y-%m-%d")
+    # 07/09/2026 (audit) : date de PARIS, comme les créneaux — utcnow() est obsolète et décalait le verrou
+    aujourdhui = _dt.now(_ZI("Europe/Paris")).strftime("%Y-%m-%d")
     if ps.get("derniere_publication") == aujourdhui:
         print("Déjà publié aujourd'hui — règle 1/jour, on ne double pas.")
         sys.exit(0)
@@ -207,7 +209,6 @@ def main():
         sys.exit(0)
 
     # ---- horaires : heure de Paris, personnalisés prioritaires, défauts sur créneau lun/mer/ven 19h ----
-    from zoneinfo import ZoneInfo as _ZI
     _now_paris = _dt.now(_ZI("Europe/Paris"))
     maintenant = _now_paris.strftime("%Y-%m-%d %H:%M")
     _manuel = os.environ.get("GITHUB_EVENT_NAME", "") != "schedule"

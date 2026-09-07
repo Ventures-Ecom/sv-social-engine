@@ -79,11 +79,10 @@ def run_generate():
 
 def _dispatch_workflow(name):
     """Déclenche un robot GitHub (workflow_dispatch). Renvoie (ok, erreur)."""
-    import re as _re
     import urllib.request as _ur
     r = subprocess.run(["git", "remote", "get-url", "origin"],
                        cwd=ROOT, capture_output=True, text=True)
-    m = _re.search(r"x-access-token:([^@]+)@github\.com/([^/]+/[^/.]+)", r.stdout.strip())
+    m = re.search(r"x-access-token:([^@]+)@github\.com/([^/]+/[^/.]+)", r.stdout.strip())
     if not m:
         return False, "accès GitHub introuvable"
     req = _ur.Request(
@@ -99,6 +98,13 @@ def _dispatch_workflow(name):
 
 
 _git_lock = threading.Lock()
+
+
+def _date_paris():
+    """Date du jour en heure de Paris — la même que publish.py pour le verrou « 1 publication / jour »."""
+    from datetime import datetime as _d
+    from zoneinfo import ZoneInfo as _Z
+    return _d.now(_Z("Europe/Paris")).strftime("%Y-%m-%d")
 
 # 06/09/2026 : « Actualiser depuis Instagram » semblait ne rien faire (Laurie) — la chaîne GitHub →
 # autopull (2 min) marchait mais restait muette 2 à 6 min. Désormais : suivi d'étapes + pull rapide.
@@ -387,14 +393,12 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path == "/api/publish_now":
             # secours si la publication automatique a sauté : déclenche le robot
             # publieur sur GitHub (mêmes garde-fous : verrou 1/jour, pas_avant).
-            import re
             import urllib.request
             subprocess.run(["git", "pull", "--rebase", "--autostash"],
                            cwd=ROOT, timeout=60, capture_output=True)
             psp = os.path.join(ENGINE, "publish-state.json")
             if os.path.exists(psp):
-                import datetime as _dt
-                if json.load(open(psp)).get("derniere_publication") == _dt.datetime.utcnow().strftime("%Y-%m-%d"):
+                if json.load(open(psp)).get("derniere_publication") == _date_paris():
                     return self._json({"error": "déjà publié aujourd'hui (règle 1/jour)"}, 409)
             items = [it for it in sorted(os.listdir(Q("approved")))
                      if os.path.isdir(os.path.join(Q("approved"), it)) and "_reel_" not in it]
@@ -507,7 +511,7 @@ class Handler(SimpleHTTPRequestHandler):
                         rest_map[rest] = (state, it)
                         current.append(rest)
             ordered = [r for r in snap["order"] if r in rest_map] + [r for r in current if r not in snap["order"]]
-            stamp = _dt.datetime.utcnow().strftime("%Y-%m-%d_%H")
+            stamp = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d_%H")
             for i, rest in enumerate(ordered, start=1):
                 state, it = rest_map[rest]
                 new = f"{stamp}{i:02d}00_{rest}"
@@ -548,7 +552,7 @@ class Handler(SimpleHTTPRequestHandler):
                 t = os.path.join(base, f"__reorder_{i}_{old.split('_', 2)[2]}")
                 os.rename(os.path.join(base, old), t); tmp[i] = (t, old.split("_", 2)[2].strip())
             for i, (t, reste) in tmp.items():
-                reste = __import__("re").sub(r" \d+$", "", reste)  # (« re » est réassigné localement plus bas dans do_POST)
+                reste = re.sub(r" \d+$", "", reste)
                 os.rename(t, os.path.join(base, f"{date}_{i * 100 + 100100:06d}_{reste}"))
             _git_sync_bg(f"reorder {state}")
             return self._json({"ok": True})
@@ -606,8 +610,7 @@ class Handler(SimpleHTTPRequestHandler):
             mp = os.path.join(Q(state), item, "meta.json")
             if not os.path.exists(mp):
                 return self._json({"error": "introuvable"}, 404)
-            import re as _re
-            if quand and not _re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$", quand):
+            if quand and not re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$", quand):
                 return self._json({"error": "format attendu : AAAA-MM-JJ HH:MM"}, 400)
             meta = json.load(open(mp))
             if quand:

@@ -40,10 +40,33 @@ if cible:
     print(f"{len(trouves)} produit(s) ciblé(s) : post + carrousel ✅" if trouves else "rien généré")
     raise SystemExit(0)
 
+ALERTES_PATH = os.path.join(ENGINE, "alertes-generation.json")
+
+
+def _alertes(sautes, executed):
+    """07/09/2026 (audit) : un brief ignoré ne l'est plus en silence — l'inspectrice et le Cockpit le voient."""
+    from datetime import datetime, timezone
+    if sautes:
+        json.dump({"date": datetime.now(timezone.utc).isoformat(timespec="minutes"), "alertes": sautes,
+                   "briefs_executes": executed}, open(ALERTES_PATH, "w"), indent=2, ensure_ascii=False)
+    elif os.path.exists(ALERTES_PATH):
+        os.remove(ALERTES_PATH)
+
+
 executed = 0
+sautes = []
+en_file = core.handles_en_file(products=products)
 for brief in plan[:4]:
-    p = find_product(brief.get("robe", ""))
+    nom = brief.get("robe", "")
+    p = find_product(nom)
     if not p:
+        sautes.append(f"brief « {nom} » ({brief.get('format', '?')}) ignoré : robe introuvable dans le catalogue")
+        print("⚠️ " + sautes[-1])
+        continue
+    kind = "carousel" if str(brief.get("format", "")).startswith("carrousel") else "post"
+    if kind in en_file.get(p["handle"], set()):
+        sautes.append(f"brief « {nom} » ({brief.get('format', '?')}) ignoré : un {kind} de cette robe est déjà en file (règle d'alternance)")
+        print("⚠️ " + sautes[-1])
         continue
     if brief.get("format") == "buste_produit":
         g.make_no_face("bust", p, captions, state, key)
@@ -67,11 +90,14 @@ for brief in plan[:4]:
 
 if executed == 0:
     # secours : la règle fondatrice 03/08 reste respectée — 1 post simple + au moins 1 carrousel
+    if plan:
+        sautes.append(f"aucun des {len(plan[:4])} briefs du plan n'a pu être exécuté → lot de secours (2 robes tirées au sort)")
     chosen = g.pick_products_saison(products, state, 2, key)
     g.make_model_post(chosen[0], captions, state, key)
     g.make_carousel_tour(chosen[1], captions, state, key)
 
 core.save_state(state)
+_alertes(sautes, executed)
 if os.path.exists(plan_path):
     os.remove(plan_path)
 g._progress("")

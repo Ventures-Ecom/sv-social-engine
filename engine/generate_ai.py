@@ -71,8 +71,52 @@ def _progress(txt):
         pass
 
 
+# 07/09/2026 (audit) : SV_FAKE_GEMINI=1 = mode test SANS AUCUN APPEL PAYANT — image de remplissage,
+# verdicts « pass », Magnific sauté, compteur budget intact. Sert à tester la file, le Cockpit,
+# les workflows et toute modification du moteur avant de dépenser un centime.
+FAKE = os.environ.get("SV_FAKE_GEMINI") == "1"
+
+
+def _fake_reponse(model, parts):
+    import hashlib, io as _io
+    txt = next((p.get("text", "") for p in parts if isinstance(p, dict) and p.get("text")), "")
+    if model == IMAGE_MODEL:
+        from PIL import Image as _Img, ImageDraw as _Draw
+        h = int(hashlib.sha1(txt.encode()).hexdigest()[:6], 16)
+        img = _Img.new("RGB", (1080, 1350), ((h >> 16) & 255, (h >> 8) & 255, h & 255))
+        _Draw.Draw(img).multiline_text((40, 40), "MODE TEST SV_FAKE_GEMINI\n" + txt[:70], fill=(255, 255, 255))
+        buf = _io.BytesIO()
+        img.save(buf, "JPEG", quality=85)
+        data = base64.b64encode(buf.getvalue()).decode()
+        return {"candidates": [{"content": {"parts": [{"inlineData": {"mimeType": "image/jpeg", "data": data}}]}}], "fake": True}
+    verdict = {"dress_identical": True, "invented_details": [], "skin_natural": True, "face_consistent": True,
+               "verdict": "pass", "face_clean": True, "issues": [], "worn": True, "still_life": False, "view": "back",
+               "type": "plein_pied", "same_location": True, "near_duplicate": False, "de_saison": True,
+               "raison": "mode test", "publiable": True, "legende": "Légende de test (SV_FAKE_GEMINI). ~",
+               "rule": "SKIP", "scope": "GLOBAL"}
+    return {"candidates": [{"content": {"parts": [{"text": json.dumps(verdict)}]}}], "fake": True}
+
+
+def _compte_juge():
+    """Compte les appels au modèle juge (non plafonnés, mais facturés) dans budget.json → check_calls."""
+    try:
+        bp = os.path.join(ENGINE, "budget.json")
+        b = json.load(open(bp)) if os.path.exists(bp) else {}
+        month = datetime.now(timezone.utc).strftime("%Y-%m")
+        if b.get("gen_month") != month:
+            b = {"gen_month": month, "gen_calls": 0}
+        b["check_calls"] = b.get("check_calls", 0) + 1
+        json.dump(b, open(bp, "w"))
+    except Exception:
+        pass
+
+
 def gemini(model, parts, key):
     """Appel Gemini via curl (urllib bloqué par certains proxies)."""
+    if FAKE:
+        return _fake_reponse(model, parts)
+    if model == CHECK_MODEL:
+        _compte_juge()
     payload = json.dumps({"contents": [{"parts": parts}]})
     r = subprocess.run(
         ["curl", "-s", "--max-time", "180",
@@ -150,6 +194,8 @@ skin_natural = false ONLY if the skin is clearly artificial: waxy, plastic, pore
 
 def _budget_guard():
     from datetime import datetime, timezone
+    if FAKE:
+        return  # mode test : rien n'est facturé, le compteur reste intact
     bp = os.path.join(ENGINE, "budget.json")
     try:
         b = json.load(open(bp)) if os.path.exists(bp) else {}
@@ -353,6 +399,9 @@ def magnific_finalize(media_path, key):
     """Passe humanité Magnific + inspection anti-artefact. 2 essais max."""
     from PIL import Image as _I
     import magnific
+    if FAKE:
+        print("  mode test : Magnific sauté")
+        return False
     for attempt in (1, 2):
         tmp = media_path + ".mag.jpg"
         try:
@@ -904,6 +953,8 @@ def _ref_dos_par_vision(refs, key):
 
 def _verifie_plan(hero_path, cand_path, plan, key):
     """Le plan demandé est-il obtenu ? même lieu que la slide 1 ? pas un doublon ? (07/09/2026)"""
+    if FAKE:
+        return (True, True, False, {"fake": True})
     prompt = ("Image 1 is the first slide of a fashion carousel, image 2 a candidate for the next slide. Answer ONLY with JSON: "
               "{\"type\": one of [plein_pied, trois_quarts, closeup_matiere, dos, marche, assise, flatlay, autre] describing image 2 "
               "(plein_pied = full length standing; trois_quarts = hips/waist up; closeup_matiere = tight crop on fabric, face mostly out of frame; "
