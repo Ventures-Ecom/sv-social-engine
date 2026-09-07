@@ -5,6 +5,7 @@ Lancement : double-clic sur "SV Cockpit.command" (ou python3 engine/serve.py)
 puis http://localhost:8765
 """
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -154,6 +155,27 @@ def _git_sync(message):
             push = subprocess.run(["git", "push"], cwd=ROOT, timeout=120, capture_output=True)
             if push.returncode == 0:
                 return
+
+
+def _renumeroter(state):
+    """Donne à chaque dossier d'une file un horodatage UNIQUE et croissant (ordre actuel conservé).
+    Renvoie {ancien_nom: nouveau_nom}. Retire aussi les suffixes « 2 » que macOS ajoute aux doublons."""
+    base = Q(state)
+    noms = sorted(d for d in os.listdir(base) if os.path.isdir(os.path.join(base, d)) and d.count("_") >= 2)
+    if not noms:
+        return {}
+    date = noms[0].split("_", 1)[0]
+    ren = {}
+    for i, old in enumerate(noms, 1):
+        reste = old.split("_", 2)[2].strip()
+        reste = re.sub(r" \d+$", "", reste)  # « …gown 2 » → « …gown »
+        new = f"{date}_{i * 100 + 100000:06d}_{reste}"
+        if new != old:
+            if os.path.exists(os.path.join(base, new)):
+                new = f"{date}_{i * 100 + 100000 + 1:06d}_{reste}"
+            os.rename(os.path.join(base, old), os.path.join(base, new))
+        ren[old] = new
+    return ren
 
 
 def _git_sync_bg(message):
@@ -497,6 +519,10 @@ class Handler(SimpleHTTPRequestHandler):
 
         if self.path == "/api/swap":
             a, sa, b, sb = data.get("a"), data.get("stateA"), data.get("b"), data.get("stateB")
+            # 07/09/2026 : deux dossiers avec le MÊME horodatage (ou un suffixe « 2 » Finder) faisaient échouer l'échange
+            # → on renumérote la file avant d'échanger, et on renvoie les nouveaux noms
+            ren = _renumeroter(sa) if sa == sb else {**_renumeroter(sa), **_renumeroter(sb)}
+            a, b = ren.get(a, a), ren.get(b, b)
             pa, pb = os.path.join(Q(sa), a), os.path.join(Q(sb), b)
             if not (os.path.isdir(pa) and os.path.isdir(pb)):
                 return self._json({"error": "introuvable"}, 404)
