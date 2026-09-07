@@ -10,9 +10,5 @@
     "Vary model poses, camera framing, and background contexts to create distinct, innovative compositions and avoid repeating previously generated setups.",
     "Use a natural standing pose with balanced, centered framing, ensuring the full garment is clearly visible without tight or awkward cropping."
   ],
-  "par_robe": {
-    "bourgeoise-dress": [
-      "Strictly depict the exact Vespéra dress model with its specific silhouette, cut, and signature design features."
-    ]
-  }
+  "par_robe": {}
 }
