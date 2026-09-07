@@ -833,10 +833,100 @@ def make_carousel_lineup(products3, captions, state, key):
     return _livrer(d)
 
 
+PLAN_INSTRUCTIONS = {
+    # Grammaire des 21 carrousels exemples de Laurie (mdv-refs/plans.json) : le vêtement est TOUJOURS porté.
+    "trois_quarts": "a three-quarter view from the hips up, the bodice and neckline of the garment filling the frame, her face partly out of frame or looking away, hands relaxed",
+    "closeup_matiere": "a tight close-up on the fabric, seams and construction of the garment as she wears it, cropped at the lips or chin, no full face",
+    "dos": "seen from BEHIND, full length, head slightly turned, showing the back of the garment exactly as in the product back-view reference (straps, zip, lacing, seams)",
+    "marche": "walking slowly toward or past the camera, full length, natural stride, one leg forward, garment in motion",
+    "assise": "seated on a step, ledge or chair of the same location, full body visible, sculptural static pose, gaze away from the camera",
+    "plein_pied": "a second full-length standing pose, different from the first, weight on one leg, sculptural",
+}
+PLAN_SEQUENCES = [  # rotation d'un carrousel au suivant (state['last_plan_seq']) — « assise » retirée (test v3 07/09 :
+    # le modèle invente un escalier pour s'asseoir et quitte le décor de la slide 1)
+    ["trois_quarts", "dos"],
+    ["closeup_matiere", "dos", "marche"],
+    ["dos", "trois_quarts", "marche"],
+    ["trois_quarts", "closeup_matiere", "plein_pied"],
+]
+
+
+def _plan_ref(plan_type):
+    """Une slide exemple de Laurie du même type de plan (référence de CADRAGE, jamais de contenu)."""
+    try:
+        plans = json.load(open(os.path.join(ENGINE, "mdv-refs", "plans.json")))
+        pool = [x for x in plans.get(plan_type, []) if x.get("worn") and not x.get("erreur")]
+        if not pool and plan_type in ("marche", "assise"):
+            pool = [x for x in plans.get("plein_pied", []) if x.get("worn")]
+        if pool:
+            return os.path.join(ENGINE, random.choice(pool)["path"])
+    except Exception:
+        pass
+    return None
+
+
+def _slide_est_portee(img_path, key):
+    """Garde-fou (Laurie 07/09) : une slide sans personne = nature morte = refusée."""
+    try:
+        resp = gemini(CHECK_MODEL, [{"text": "Answer ONLY with JSON {\"worn\": true/false, \"still_life\": true/false}: is a person wearing the garment in this photo (worn), or is the garment shown alone, flat, on a hanger or on furniture (still_life)?"},
+                                    {"inline_data": {"mime_type": "image/jpeg", "data": b64_of(img_path)}}], key)
+        txt = resp["candidates"][0]["content"]["parts"][0]["text"]
+        j = json.loads(txt[txt.find("{"):txt.rfind("}") + 1])
+        return bool(j.get("worn")) and not j.get("still_life")
+    except Exception:
+        return True
+
+
+PLAN_COMPATIBLES = {
+    "trois_quarts": {"trois_quarts", "closeup_matiere"},
+    "closeup_matiere": {"closeup_matiere", "trois_quarts"},
+    "dos": {"dos"},
+    "marche": {"marche", "plein_pied"},
+    "assise": {"assise"},
+    "plein_pied": {"plein_pied", "marche"},
+}
+
+
+def _ref_dos_par_vision(refs, key):
+    """Parmi les photos produit téléchargées, laquelle montre le DOS du vêtement ? (None si aucune)"""
+    for rp in refs[1:]:
+        try:
+            resp = gemini(CHECK_MODEL, [{"text": "Answer ONLY with JSON {\"view\": \"front\"|\"back\"|\"side\"|\"detail\"|\"lifestyle\"}: from which side is the garment shown in this product photo? back = the model's back faces the camera."},
+                                        {"inline_data": {"mime_type": "image/jpeg", "data": b64_of(rp)}}], key)
+            txt = resp["candidates"][0]["content"]["parts"][0]["text"]
+            if json.loads(txt[txt.find("{"):txt.rfind("}") + 1]).get("view") == "back":
+                return rp
+        except Exception:
+            continue
+    return None
+
+
+def _verifie_plan(hero_path, cand_path, plan, key):
+    """Le plan demandé est-il obtenu ? même lieu que la slide 1 ? pas un doublon ? (07/09/2026)"""
+    prompt = ("Image 1 is the first slide of a fashion carousel, image 2 a candidate for the next slide. Answer ONLY with JSON: "
+              "{\"type\": one of [plein_pied, trois_quarts, closeup_matiere, dos, marche, assise, flatlay, autre] describing image 2 "
+              "(plein_pied = full length standing; trois_quarts = hips/waist up; closeup_matiere = tight crop on fabric, face mostly out of frame; "
+              "dos = seen from behind; marche = walking; assise = seated), "
+              "\"same_location\": true/false (same place, same background elements, same light as image 1), "
+              "\"near_duplicate\": true/false (same pose and nearly the same framing as image 1)}")
+    try:
+        resp = gemini(CHECK_MODEL, [{"text": prompt},
+                                    {"inline_data": {"mime_type": "image/jpeg", "data": b64_of(hero_path)}},
+                                    {"inline_data": {"mime_type": "image/jpeg", "data": b64_of(cand_path)}}], key)
+        txt = resp["candidates"][0]["content"]["parts"][0]["text"]
+        j = json.loads(txt[txt.find("{"):txt.rfind("}") + 1])
+        t = j.get("type", "autre")
+        return (t in PLAN_COMPATIBLES.get(plan, {plan}), bool(j.get("same_location", True)), bool(j.get("near_duplicate", False)), j)
+    except Exception as e:
+        return (True, True, False, {"erreur": str(e)[:80]})
+
+
 def make_carousel_tour(product, captions, state, key):
-    """RECETTE MDV N°1 « tour du produit » (distillée des 21 exemples de Laurie, 03/08) :
-    UNE muse, UNE robe, UN lieu — plein pied → close-up matière → plein pied de dos.
-    Les slides 2-3 sont des ÉDITIONS de la slide 1 : même femme et même ambiance garanties."""
+    """RECETTE MDV N°1 « tour du produit », refondue le 07/09/2026 (retour Laurie : « slides 2-3 fake,
+    tout le temps la même chose ») : UNE muse, UNE robe, UN lieu, le vêtement TOUJOURS PORTÉ.
+    Slide 1 = plein pied héro validé ; slides 2-4 = NOUVELLES photos du même shooting selon une séquence
+    de plans qui tourne (trois-quarts, matière, dos, marche, assise), chacune guidée par une slide EXEMPLE
+    de Laurie du même type de plan (référence de cadrage). Jamais de fauteuil ni de flatlay."""
     from PIL import Image as _I
     import shutil as _sh
     import time as _t
@@ -850,26 +940,42 @@ def make_carousel_tour(product, captions, state, key):
         blob = (str(im.get("alt") or "") + " " + im.get("src", "")).lower()
         if any(k in blob for k in ("back", "dos", "rear")) and im not in picks:
             picks.append(im)
-    for im in imgs[1:3]:
-        if len(picks) >= 3:
+    for im in imgs[1:4]:
+        if len(picks) >= 4:
             break
         if im not in picks:
             picks.append(im)
     refs = []
-    for i, im in enumerate(picks[:3]):
+    for i, im in enumerate(picks[:4]):
         rp = os.path.join(d, f"ref-{i+1}.jpg")
         core.fetch_image(im["src"], 1200).save(rp, quality=92)
         refs.append(rp)
     scene = pick_scene(cfg["scenes"], state.get("last_scene"))
     state["last_scene"] = scene["id"]
     rules = cfg["rules"] + lecons_texte(product["handle"])
-    # slide 1 : le plein pied héro, pipeline classique complet
+    seq_i = (int(state.get("last_plan_seq", -1)) + 1) % len(PLAN_SEQUENCES)
+    state["last_plan_seq"] = seq_i
+    # La photo de dos se reconnaît PAR VISION (test v2 07/09 : Ruby avait une vraie photo de dos, sans « back » dans le nom)
+    ref_dos = _ref_dos_par_vision(refs, key)
+    a_ref_dos = ref_dos is not None
+    # « dos » exige une vraie photo produit de dos (sinon le contrôle refuse tout, test v2 07/09) → repli
+    sequence = []
+    for pl in PLAN_SEQUENCES[seq_i]:
+        if pl == "dos" and not a_ref_dos:
+            pl = "marche" if "marche" not in PLAN_SEQUENCES[seq_i] else "plein_pied"
+        if pl not in sequence:
+            sequence.append(pl)
+    replis = [pl for pl in ("closeup_matiere", "trois_quarts", "marche", "plein_pied") if pl not in sequence][:2]
+    journal = []
+    _progress(f"carrousel {name} — slide 1/{len(sequence)+1} (plein pied)")
     hero = None
     for attempt in range(1, 5):
         try:
-            raw = generate_candidate(refs, scene["text"], random.choice(cfg["poses"]), rules, key,
+            poses_debout = [po for po in cfg["poses"] if not any(w in po.lower() for w in ("sit", "seated", "assise", "chair", "steps"))] or cfg["poses"]
+            raw = generate_candidate(refs, scene["text"], random.choice(poses_debout), rules, key,
                                      sample_imperfections(cfg))
-        except RuntimeError:
+        except RuntimeError as e:
+            journal.append({f"slide-1 essai {attempt}": str(e)[:150]})
             _t.sleep(15)
             continue
         cp = os.path.join(d, "slide-1.jpg")
@@ -881,32 +987,44 @@ def make_carousel_tour(product, captions, state, key):
         v = check_candidate(refs[0], cp, key)
         if v.get("verdict") != "pass":
             v = check_candidate(refs[0], cp, key)
+        journal.append({f"slide-1 essai {attempt}": v})
         if v.get("verdict") == "pass":
             hero = cp
             break
     if not hero:
+        json.dump(journal, open(os.path.join(d, "controle.json"), "w"), indent=2, ensure_ascii=False)
         _sh.move(d, os.path.join(ROOT, "queue", "rejected", os.path.basename(d)))
         print(f"❌ tour {name} : plein pied jamais validé")
         _fiabilite(product["handle"], False)
         return None
-    # slides 2-3 : éditions du héro — mêmes femme/robe/lieu, cadrage différent (grammaire MDV)
-    EDITS = [
-        ("slide-2.jpg", "Edit this photograph into a CLOSE-UP from the same shoot: the SAME woman, the SAME dress, "
-                        "same setting and light — a tight crop on the bodice, neckline, straps and fabric texture, "
-                        "her face partly out of frame (cut at the lips). Every dress detail stays EXACTLY as in the "
-                        "product reference. Crisp, sharp, real photograph."),
-        ("slide-3.jpg", "Edit this photograph into a view from BEHIND, full length, from the same shoot: the SAME "
-                        "woman, the SAME dress, same setting and light, natural elegant stance. The back of the dress "
-                        "must match the product reference back view exactly (straps, lacing, zip, seams). Crisp, "
-                        "sharp, real photograph."),
-    ]
-    for fname, consigne in EDITS:
+    plans_faits = ["plein_pied"]
+    a_faire = list(sequence)
+    idx = 1
+    while a_faire and idx < 5:
+        plan = a_faire.pop(0)
+        idx += 1
+        _progress(f"carrousel {name} — slide {idx}/{len(sequence)+1} ({plan})")
+        fname = f"slide-{idx}.jpg"
+        dernier = not a_faire
         ok = False
-        for essai in (1, 2, 3):
+        for essai in (1, 2):  # 2 essais max par plan (test v3 : 12 générations perdues sur un seul carrousel)
             _budget_guard()
-            parts = ([{"text": consigne + lecons_texte(product["handle"])},
-                      {"inline_data": {"mime_type": "image/jpeg", "data": b64_of(hero)}}] +
-                     [{"inline_data": {"mime_type": "image/jpeg", "data": b64_of(r)}} for r in refs])
+            plan_ref = None
+            consigne = (
+                "Create a NEW photograph from the SAME fashion shoot as the first image: the SAME woman (same face, same hairstyle), "
+                "wearing the SAME garment, in the SAME location with the SAME light and color palette. "
+                f"This new frame is {PLAN_INSTRUCTIONS[plan]}. "
+                + ("Her silhouette is slightly cut by the edge of the frame, as if inviting a swipe. " if dernier else "")
+                + "The garment is WORN by her: a person is always in the frame — never a still life, never on a chair, never laid flat. "
+                "Every garment detail stays EXACTLY as in the product reference photos. Crisp, sharp, real unretouched photograph, no text."
+                + "The camera MOVES: this frame must be clearly different from the first image (different distance, angle and pose) — never a crop or copy of it. "
+                f"THE LOCATION DOES NOT CHANGE. It is exactly the place of the first image: {scene['text']} Reproduce the same walls, floor, furniture, windows and light; "
+                "do not add stairs, balustrades, columns or any element absent from the first image. "
+                + lecons_texte(product["handle"]))
+            # 07/09 test 1 : une image exemple envoyée comme référence de cadrage entraînait SON décor
+            # (escalier, assise) dans la slide → on garde la grammaire en texte seulement.
+            parts = ([{"text": consigne}, {"inline_data": {"mime_type": "image/jpeg", "data": b64_of(hero)}}]
+                     + [{"inline_data": {"mime_type": "image/jpeg", "data": b64_of(r)}} for r in refs])
             resp = gemini(IMAGE_MODEL, parts, key)
             raw = None
             for cc in resp.get("candidates", []):
@@ -915,33 +1033,70 @@ def make_carousel_tour(product, captions, state, key):
                     if dd:
                         raw = base64.b64decode(dd["data"])
             if not raw:
+                journal.append({f"{fname} essai {essai}": "pas d'image générée"})
                 _t.sleep(10)
                 continue
             cp = os.path.join(d, fname)
             save_jpeg(raw, cp)
-            ref_v = refs[-1] if fname == "slide-3.jpg" and len(refs) > 1 else refs[0]
+            ref_v = ref_dos if (plan == "dos" and ref_dos) else refs[0]
             v = check_candidate(ref_v, cp, key)
             if not (v.get("dress_identical") and not v.get("invented_details")):
                 v = check_candidate(ref_v, cp, key)  # 2e avis avant de jeter une image payée
-            if v.get("dress_identical") and not v.get("invented_details"):
+            portee = _slide_est_portee(cp, key)
+            plan_ok, meme_lieu, doublon, detail = _verifie_plan(hero, cp, plan, key)
+            journal.append({f"{fname} essai {essai} ({plan})": {"controle": v, "portee": portee, "plan_ok": plan_ok, "meme_lieu": meme_lieu, "doublon_slide1": doublon, "lu": detail}})
+            if v.get("dress_identical") and not v.get("invented_details") and portee and plan_ok and meme_lieu and not doublon:
                 ok = True
                 break
-            os.rename(cp, cp.replace(".jpg", f"_essai{essai}-recale.jpg"))  # on n'efface jamais
+            os.rename(cp, os.path.join(d, f"essai-{fname[:-4]}_{plan}-{essai}-recale.jpg"))  # on n'efface jamais
         if not ok:
+            # plan raté : on passe au plan suivant de la séquence (test v4 07/09 : le carrousel était rejeté
+            # alors qu'il restait des plans à essayer), puis aux replis ; 3 slides minimum pour livrer
+            if a_faire:
+                print(f"↩️ tour {name} : {fname} ({plan}) raté → plan suivant {a_faire[0]}")
+                idx -= 1
+                continue
+            if replis:
+                sub = replis.pop(0)
+                print(f"↩️ tour {name} : {fname} ({plan}) raté → repli {sub}")
+                a_faire.insert(0, sub)
+                idx -= 1
+                continue
+            if len(plans_faits) >= 3:
+                break
+            json.dump(journal, open(os.path.join(d, "controle.json"), "w"), indent=2, ensure_ascii=False)
             _sh.move(d, os.path.join(ROOT, "queue", "rejected", os.path.basename(d)))
-            print(f"❌ tour {name} : {fname} jamais fidèle")
+            print(f"❌ tour {name} : {len(plans_faits)} slide(s) seulement, aucun plan restant")
             return None
+        plans_faits.append(plan)
+        if len(plans_faits) >= 4:
+            break
+        if not a_faire and len(plans_faits) < 3 and replis:
+            a_faire.append(replis.pop(0))  # règle fondatrice : 3 slides minimum (test v5 07/09 livrait 2 slides)
+    if len(plans_faits) < 3:
+        json.dump(journal, open(os.path.join(d, "controle.json"), "w"), indent=2, ensure_ascii=False)
+        _sh.move(d, os.path.join(ROOT, "queue", "rejected", os.path.basename(d)))
+        print(f"❌ tour {name} : {len(plans_faits)} slides seulement (minimum 3)")
+        return None
+    json.dump(journal, open(os.path.join(d, "controle.json"), "w"), indent=2, ensure_ascii=False)
     for i, sl in enumerate(sorted(f for f in os.listdir(d)
-                                  if f.startswith("slide") and "recale" not in f), 1):
+                                  if re.match(r"^slide-\d+\.jpg$", f)), 1):
         sp = os.path.join(d, sl)
         core.cover(_I.open(sp).convert("RGB"), 1080, 1350).save(sp, quality=92)
         magnific_finalize(sp, key) if i == 1 else clean_noise(sp)
     _fiabilite(product["handle"], True)
     cap = core.pick_caption(captions, "carousel", state, name)
+    libelle = {"plein_pied": "full length", "trois_quarts": "three-quarter", "closeup_matiere": "fabric close-up",
+               "dos": "from behind", "marche": "walking", "assise": "seated"}
     core.write_meta(d, "carousel", cap,
-                    f"Carousel from one shoot: the {name} dress full length, then a close-up of the bodice and fabric, then seen from behind — same muse, same light throughout.",
+                    f"Recette « tour du produit » (séquence {seq_i+1}) : the {name}, {' → '.join(libelle[p] for p in plans_faits)} — same muse, same place, same light, garment always worn.",
                     random.choice(captions["hashtags"]))
-    print(f"✅ carrousel tour du produit : {name}")
+    try:
+        mp = os.path.join(d, "meta.json"); m = json.load(open(mp))
+        m["recette"] = "tour_du_produit"; m["plans"] = plans_faits; json.dump(m, open(mp, "w"), indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+    print(f"✅ carrousel tour du produit : {name} ({' → '.join(plans_faits)})")
     return _livrer(d)
 
 

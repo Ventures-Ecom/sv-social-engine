@@ -1,11 +1,11 @@
 {
   "ordre_libres": [
-    25,
-    26,
     28,
     29,
-    27
+    27,
+    31,
+    30
   ],
-  "raison": "Poursuite du flux couleur par un dégradé organique allant du blanc au noir via la maille camel (25), le brun chocolat (26) et l'olive (28). Le noir (29) prépare ensuite la rupture lumineuse de la robe dentelle blanche (27).",
+  "raison": "Ce parti pris installe un rythme rythmé et contrasté en faisant directement transition du vert olive vers l'espresso chaleureux, suivi d'une respiration blanche puis du noir profond. La séquence enchaîne ensuite sur les mailles texturées vert forêt et rayée marine pour amorcer une transition douce vers un vestiaire plus contemporain.",
   "applique": true
 }

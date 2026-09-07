@@ -1,7 +1,10 @@
 {
   "used_captions": [
     "New season, new silhouettes ~ {name}, online now.",
-    "Warm neutrals, sculpted lines, {name}."
+    "Warm neutrals, sculpted lines, {name}.",
+    "Three ways to meet {name}.",
+    "{name}, but make it after dark.",
+    "Swipe for the full story. {name}."
   ],
   "used_products": [
     "coat-ebony",
@@ -12,7 +15,8 @@
     "jacket-noa",
     "sweater-calyss"
   ],
-  "last_scene": "interieur-soir",
+  "last_scene": "cafe-parisien-soir",
   "gen_month": "2026-07",
-  "gen_calls": 2
+  "gen_calls": 2,
+  "last_plan_seq": 0
 }

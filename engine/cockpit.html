@@ -215,12 +215,28 @@ function mediaHtml(it){
   if (it.type === "reel") return `<video src="${it.media[0]}" controls muted loop playsinline></video>`;
   if (it.media.length > 1){
     const gz = i => 'openZoomSet(' + JSON.stringify(it.media).replace(/"/g, "&quot;") + ', ' + i + ')';
+    const files = it.media_files || [];
+    const off = i => (it.state === "pending" && files[i]) ? `<span onclick="slideOff('${it.state}','${it.id}','${files[i]}');event.stopPropagation()" title="Retirer cette image du carrousel (les autres restent)" style="position:absolute;top:2px;right:2px;background:#000c;color:#fff;border-radius:50%;width:18px;height:18px;line-height:18px;text-align:center;font-size:12px;cursor:pointer">✕</span>` : "";
     return `<img src="${it.media[0]}" onclick="${gz(0)}" style="cursor:zoom-in">
       <div style="display:flex;gap:4px;margin-top:4px">` +
-      it.media.map((m, i) => `<img src="${m}" onclick="${gz(i)}" style="width:${(100/it.media.length).toFixed(1)}%;aspect-ratio:4/5;object-fit:cover;border-radius:5px;cursor:zoom-in;border:1px solid #322e2c">`).join("") +
-      `</div>`;
+      it.media.map((m, i) => `<div style="position:relative;width:${(100/it.media.length).toFixed(1)}%"><img src="${m}" onclick="${gz(i)}" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:5px;cursor:zoom-in;border:1px solid #322e2c">${off(i)}</div>`).join("") +
+      `</div>` + retireesHtml(it);
   }
-  return `<img src="${it.media[0]}" onclick="openZoom('${it.media[0]}')" style="cursor:zoom-in">`;
+  return `<img src="${it.media[0]}" onclick="openZoom('${it.media[0]}')" style="cursor:zoom-in">` + retireesHtml(it);
+}
+function retireesHtml(it){
+  const r = it.retirees || [];
+  if (!r.length) return "";
+  return `<div style="display:flex;gap:4px;margin-top:4px;opacity:.55;align-items:center"><span style="font-size:10px;color:#aaa">retirées :</span>` +
+    r.map(x => `<div style="position:relative;width:14%"><img src="${x.url}" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:4px;filter:grayscale(1)"><span onclick="slideOn('${it.state}','${it.id}','${x.file}')" title="Remettre cette image" style="position:absolute;top:2px;right:2px;background:#2c5f2dcc;color:#fff;border-radius:50%;width:16px;height:16px;line-height:16px;text-align:center;font-size:11px;cursor:pointer">↩</span></div>`).join("") + `</div>`;
+}
+async function slideOff(state, id, file){
+  const r = await fetch("/api/action", {method: "POST", body: JSON.stringify({state, id, action: "slide_off", file})});
+  const j = await r.json(); if (j.ok) { toast("✕ Image retirée du carrousel (réversible)"); load(); } else toast("⚠️ " + (j.error || "échec"));
+}
+async function slideOn(state, id, file){
+  const r = await fetch("/api/action", {method: "POST", body: JSON.stringify({state, id, action: "slide_on", file})});
+  const j = await r.json(); if (j.ok) { toast("↩ Image remise"); load(); } else toast("⚠️ " + (j.error || "échec"));
 }
 let ZOOMSET = [], ZOOMIDX = 0;
 function openZoom(src){ openZoomSet([src], 0); }
@@ -397,7 +413,7 @@ function render(){
           <button class="no" onclick="act('${it.state}','${it.id}','reject')">✗ RETIRER DE LA FILE</button>
         </div>` : ""}
         ${TAB !== "published" ? `
-        <div class="row"><button class="sv" onclick="saveCap('${it.state}','${it.id}','cap-${TAB}-${i}')">💾 ENREGISTRER LA LÉGENDE</button></div>` : ""}
+        <div class="row"><button class="sv" onclick="saveCap('${it.state}','${it.id}','cap-${TAB}-${i}')">💾 ENREGISTRER LA LÉGENDE</button> <button class="sv" onclick="recap(this,'${it.state}','${it.id}','cap-${TAB}-${i}')" title="Fait écrire une autre légende par le rédacteur (texte seul, quasi gratuit)">🔁 AUTRE LÉGENDE</button></div>` : ""}
       </div>
     </div>`).join("");
 }
@@ -434,6 +450,16 @@ document.addEventListener("click", e => {
   if (e.target.classList && e.target.classList.contains("reason")) e.target.classList.toggle("on");
 });
 
+async function recap(btn, state, id, capId){
+  btn.disabled = true; const t = btn.textContent; btn.textContent = "⏳ ÉCRITURE…";
+  try {
+    const r = await fetch("/api/action", {method: "POST", body: JSON.stringify({state, id, action: "recaption"})});
+    const j = await r.json();
+    if (j.ok && j.caption){ document.getElementById(capId).value = j.caption; toast("🔁 Nouvelle légende écrite et enregistrée"); }
+    else toast("⚠️ " + (j.error || "échec — réessaie"));
+  } catch(e){ toast("⚠️ Le moteur local ne répond pas"); }
+  btn.disabled = false; btn.textContent = t;
+}
 async function saveCap(state, id, capId){
   const caption = document.getElementById(capId).value;
   await fetch("/api/action", {method: "POST", body: JSON.stringify({state, id, action: "save", caption})});

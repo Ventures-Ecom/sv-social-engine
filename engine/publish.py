@@ -72,7 +72,8 @@ def publish_item(folder):
         return api(f"{IG_USER}/media_publish", {"creation_id": c["id"]})
 
     if kind == "carousel":
-        slides = sorted(f for f in os.listdir(folder) if f.startswith("slide-"))
+        import re as _re
+        slides = sorted(f for f in os.listdir(folder) if _re.match(r"^slide-\d+\.jpg$", f))  # jamais les essais recalés ni les retirées (07/09)
         children = []
         for s in slides:
             c = api(f"{IG_USER}/media", {

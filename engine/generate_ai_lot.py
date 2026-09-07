@@ -53,7 +53,8 @@ for brief in plan[:4]:
     elif brief.get("format") == "carrousel_tour":
         g.make_carousel_tour(p, captions, state, key)
     elif brief.get("format") == "carrousel_porte_pose":
-        g.make_carousel_porte_pose(p, captions, state, key)
+        # 07/09/2026 (Laurie) : plus de natures mortes (fauteuil / à plat) — remplacé par le tour du produit
+        g.make_carousel_tour(p, captions, state, key)
     else:
         g.make_model_post(p, captions, state, key,
                           scene_text=brief.get("ambiance"), concept=brief.get("concept", ""))
@@ -63,7 +64,7 @@ if executed == 0:
     # secours : la règle fondatrice 03/08 reste respectée — 1 post simple + au moins 1 carrousel
     chosen = g.pick_products_saison(products, state, 2, key)
     g.make_model_post(chosen[0], captions, state, key)
-    g.make_carousel_porte_pose(chosen[1], captions, state, key)
+    g.make_carousel_tour(chosen[1], captions, state, key)
 
 core.save_state(state)
 if os.path.exists(plan_path):

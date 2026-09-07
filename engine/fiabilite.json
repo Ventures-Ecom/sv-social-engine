@@ -50,5 +50,13 @@
   "chocolat-the-chic-espresso-drape-dress": {
     "ok": 1,
     "echec": 0
+  },
+  "jacket-noa": {
+    "ok": 0,
+    "echec": 1
+  },
+  "ruby-the-midnight-muse-gown": {
+    "ok": 3,
+    "echec": 0
   }
 }

@@ -1,51 +1,51 @@
 {
-  "regle_d_or": "Un carrousel = UNE unité fermée : même muse, même lieu/fond, même lumière, même palette du début à la fin. La variation vient UNIQUEMENT du cadrage et de la pose, jamais de l'ambiance. 3 slides minimum, 5 maximum (règle fondatrice 03/08).",
-  "grammaire_des_plans": "Alternance systématique des échelles : plein pied → détail matière/dos → plein pied variante. Chaque carrousel mono-look contient AU MOINS un plein pied ET un close-up produit. Le dos et la matière sont des slides à part entière. Le visage peut être coupé au cadre : le produit est le héros, la muse est un support. La dernière slide ferme la boucle (packshot, mouvement final, ou silhouette coupée au bord qui appelle le swipe).",
-  "recettes": {
-    "tour_du_produit": {
-      "priorite": 1,
-      "exemples": [
-        "1 (Diane monument)",
-        "2 (tailleur ivoire)",
-        "3 (noir flash nuit)",
-        "5 (Chantilly studio)",
-        "13 (co-ord 3 échelles)",
-        "17 (Laya maille)",
-        "18 (corset chocolat)",
-        "19 (gilet noué soleil)"
-      ],
-      "structure": "UNE muse, UNE robe, UN lieu. Slide 1 plein pied → slide 2 close-up bodice/matière (visage partiellement hors cadre) → slide 3 plein pied DE DOS. Variante 4-5 slides : + pose alternative (assise, marche) ou packshot/flatlay final.",
-      "implementation": "make_carousel_tour (héro validé puis ÉDITIONS du héro : même femme, même robe, cadrages différents)"
-    },
-    "lineup_panorama": {
-      "priorite": 2,
-      "exemples": [
-        "6, 12, 14, 15 + fichiers Carousel 1-5 historiques"
-      ],
-      "structure": "Panorama studio continu : la même muse répétée, une tenue par silhouette, numéros « 1. » ou prénoms des robes en script manuscrit fin au-dessus. Silhouette coupée au bord de slide = moteur du swipe. Fond studio identique, ligne de sol alignée, échelle constante.",
-      "implementation": "make_carousel_lineup (montage validé 03/08 : échelle 84%, pieds alignés, fond harmonisé)"
-    },
-    "fiche_produit_editorialisee": {
-      "priorite": 3,
-      "exemples": [
-        "4 (corset cargo jacquard)",
-        "17",
-        "18"
-      ],
-      "structure": "Silhouette entière → rotation autour du produit (buste, bas, dos) → macro matière pure (sans corps) → packshot buste couture ou flatlay avec accessoires.",
-      "implementation": "make_carousel_porte_pose (portée → fauteuil → à plat)"
-    },
-    "serie_lieu": {
-      "priorite": 4,
-      "exemples": [
-        "7 (beige studio 3 looks)",
-        "16 (bridal mas en pierre)"
-      ],
-      "structure": "Un seul lieu fort (mas pierre, studio caramel), 1-2 muses, 2-3 looks, chaque look = 1-2 slides (détail + plein pied). Palette verrouillée sur le lieu.",
-      "implementation": "à briefer via ambiance identique sur toutes les slides"
-    }
+ "regle_d_or": "Un carrousel = UNE unité fermée : même muse, même lieu/fond, même lumière, même palette du début à la fin. La variation vient UNIQUEMENT du cadrage et de la pose, jamais de l'ambiance. 3 slides minimum, 5 maximum (règle fondatrice 03/08).",
+ "grammaire_des_plans": "Alternance systématique des échelles : plein pied → détail matière/dos → plein pied variante. Chaque carrousel mono-look contient AU MOINS un plein pied ET un close-up produit. Le dos et la matière sont des slides à part entière. Le visage peut être coupé au cadre : le produit est le héros, la muse est un support. La dernière slide ferme la boucle (packshot, mouvement final, ou silhouette coupée au bord qui appelle le swipe).",
+ "recettes": {
+  "tour_du_produit": {
+   "priorite": 1,
+   "exemples": [
+    "1 (Diane monument)",
+    "2 (tailleur ivoire)",
+    "3 (noir flash nuit)",
+    "5 (Chantilly studio)",
+    "13 (co-ord 3 échelles)",
+    "17 (Laya maille)",
+    "18 (corset chocolat)",
+    "19 (gilet noué soleil)"
+   ],
+   "structure": "UNE muse, UNE robe, UN lieu. Slide 1 plein pied → slide 2 close-up bodice/matière (visage partiellement hors cadre) → slide 3 plein pied DE DOS. Variante 4-5 slides : + pose alternative (assise, marche) ou packshot/flatlay final.",
+   "implementation": "make_carousel_tour refondu 07/09/2026 : héro validé puis NOUVELLES photos du même shooting (séquences tournantes trois-quarts/matière/dos/marche/assise), chaque plan guidé par une slide exemple du même type (mdv-refs/plans.json), contrôle « vêtement porté »"
   },
-  "regimes_de_texte": "Deux régimes, jamais mélangés : soit ZÉRO lettrage (défaut SV), soit numéros/prénoms manuscrits fins pour les lineups uniquement. Jamais de prix, jamais de CTA sur l'image. (Les systèmes 'magazine' des exemples Embody sont interdits chez SV : posts texte bannis par la fondatrice.)",
-  "direction_mannequin": "Poses statiques sculpturales ou marche lente, regard froid ou hors champ, JAMAIS de sourire commercial. Coiffure uniforme sur tout le carrousel (chignon plaqué, bob lisse ou waves — une seule signature par carrousel).",
-  "note": "Distillé le 03/08/2026 des 21 carrousels réels du dossier « EXEMPLE POST INSTA » de Laurie (engine/mdv-refs/exemples-carrousels/). Fidélité 100% à ces exemples : aucune invention hors de cette grammaire."
+  "lineup_panorama": {
+   "priorite": 2,
+   "exemples": [
+    "6, 12, 14, 15 + fichiers Carousel 1-5 historiques"
+   ],
+   "structure": "Panorama studio continu : la même muse répétée, une tenue par silhouette, numéros « 1. » ou prénoms des robes en script manuscrit fin au-dessus. Silhouette coupée au bord de slide = moteur du swipe. Fond studio identique, ligne de sol alignée, échelle constante.",
+   "implementation": "make_carousel_lineup (montage validé 03/08 : échelle 84%, pieds alignés, fond harmonisé)"
+  },
+  "fiche_produit_editorialisee": {
+   "priorite": 3,
+   "exemples": [
+    "4 (corset cargo jacquard)",
+    "17",
+    "18"
+   ],
+   "structure": "Silhouette entière → rotation autour du produit (buste, bas, dos) → macro matière pure (sans corps) → packshot buste couture ou flatlay avec accessoires.",
+   "implementation": "RETIRÉE 07/09/2026 (Laurie : slides posées = fake) — couverte par make_carousel_tour, vêtement toujours porté"
+  },
+  "serie_lieu": {
+   "priorite": 4,
+   "exemples": [
+    "7 (beige studio 3 looks)",
+    "16 (bridal mas en pierre)"
+   ],
+   "structure": "Un seul lieu fort (mas pierre, studio caramel), 1-2 muses, 2-3 looks, chaque look = 1-2 slides (détail + plein pied). Palette verrouillée sur le lieu.",
+   "implementation": "à briefer via ambiance identique sur toutes les slides"
+  }
+ },
+ "regimes_de_texte": "Deux régimes, jamais mélangés : soit ZÉRO lettrage (défaut SV), soit numéros/prénoms manuscrits fins pour les lineups uniquement. Jamais de prix, jamais de CTA sur l'image. (Les systèmes 'magazine' des exemples Embody sont interdits chez SV : posts texte bannis par la fondatrice.)",
+ "direction_mannequin": "Poses statiques sculpturales ou marche lente, regard froid ou hors champ, JAMAIS de sourire commercial. Coiffure uniforme sur tout le carrousel (chignon plaqué, bob lisse ou waves — une seule signature par carrousel).",
+ "note": "Distillé le 03/08/2026 des 21 carrousels réels du dossier « EXEMPLE POST INSTA » de Laurie (engine/mdv-refs/exemples-carrousels/). Fidélité 100% à ces exemples : aucune invention hors de cette grammaire."
 }

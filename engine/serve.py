@@ -34,11 +34,15 @@ def list_state(state):
         meta = json.load(open(mp))
         media = sorted(f for f in os.listdir(d)
                        if f.startswith(("media", "slide")))  # les brouillons cand-* restent sur disque mais ne s'affichent plus
+        retirees = sorted(f for f in os.listdir(d) if f.startswith("retiree-"))  # slides retirées par Laurie (07/09)
         out.append({
             "id": it, "state": state, "type": meta.get("type", "?"),
             "caption": meta.get("caption", ""),
             "alerte_da": meta.get("alerte_da"),
+            "recette": meta.get("recette"), "plans": meta.get("plans"),
             "media": [f"/queue/{state}/{it}/{m}?v={int(os.path.getmtime(os.path.join(d, m)))}" for m in media],
+            "media_files": media,
+            "retirees": [{"file": r, "url": f"/queue/{state}/{it}/{r}?v={int(os.path.getmtime(os.path.join(d, r)))}"} for r in retirees],
         })
     return out
 
@@ -559,6 +563,52 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json({"error": "introuvable"}, 404)
 
             action = data.get("action")
+            if action == "recaption":
+                # 07/09/2026 (Laurie) : « un bouton pour générer une autre légende si celle-là ne me plaît pas » — texte seul, quasi gratuit
+                mp = os.path.join(src, "meta.json")
+                meta = json.load(open(mp)) if os.path.exists(mp) else {}
+                titre = item.split("_")[-1].replace("-", " ")
+                try:  # vrai titre Shopify = le produit dont le handle termine le nom du dossier (…_tour_<handle>)
+                    import generate as _core
+                    for _p in sorted(_core.fetch_products(), key=lambda x: -len(x.get("handle", ""))):
+                        if _p.get("handle") and item.endswith(_p["handle"]):
+                            titre = _p["title"]
+                            break
+                except Exception:
+                    pass
+                genre = "carrousel" if meta.get("type") == "carousel" else "post"
+                demande = (f"{genre} Instagram pour la pièce EXACTE « {titre} » — c'est le SEUL produit à nommer, jamais un autre. "
+                           f"Contexte de l'image : {meta.get('description', '')}. "
+                           f"Écris une légende DIFFÉRENTE de celle-ci (autre angle, autre accroche) : « {meta.get('caption', '')} ». "
+                           f"Termine par 2 à 4 hashtags de la maison.")
+                r = subprocess.run(["python3", os.path.join(ENGINE, "legende.py"), demande],
+                                   cwd=ROOT, capture_output=True, timeout=120)
+                try:
+                    out = json.loads(r.stdout.decode().strip().splitlines()[-1])
+                except Exception:
+                    out = {"erreur": "le rédacteur n'a pas répondu — réessaie"}
+                if not out.get("legende"):
+                    return self._json({"error": out.get("erreur", "échec")}, 500)
+                meta["caption_precedente"] = meta.get("caption", "")
+                meta["caption"] = out["legende"]
+                json.dump(meta, open(mp, "w"), indent=2, ensure_ascii=False)
+                _git_sync_bg(f"recaption {item}")
+                return self._json({"ok": True, "caption": out["legende"]})
+            if action in ("slide_off", "slide_on"):
+                # 07/09/2026 (Laurie) : retirer UNE slide d'un carrousel sans jeter les bonnes (retiree-… = cachée, jamais publiée, réversible)
+                f = os.path.basename(data.get("file") or "")
+                fp = os.path.join(src, f)
+                if not f or not os.path.exists(fp):
+                    return self._json({"error": "slide introuvable"}, 404)
+                if action == "slide_off":
+                    restantes = [x for x in os.listdir(src) if x.startswith(("slide", "media")) and x != f]
+                    if len(restantes) < 1:
+                        return self._json({"error": "il doit rester au moins une image"}, 400)
+                    os.rename(fp, os.path.join(src, "retiree-" + f))
+                else:
+                    os.rename(fp, os.path.join(src, f.replace("retiree-", "", 1)))
+                _git_sync_bg(f"{action} {item} {f}")
+                return self._json({"ok": True})
             if action == "approve":
                 shutil.move(src, os.path.join(Q("approved"), item))
             elif action == "reject":
