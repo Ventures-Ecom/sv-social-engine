@@ -532,7 +532,7 @@ class Handler(SimpleHTTPRequestHandler):
                 t = os.path.join(base, f"__reorder_{i}_{old.split('_', 2)[2]}")
                 os.rename(os.path.join(base, old), t); tmp[i] = (t, old.split("_", 2)[2].strip())
             for i, (t, reste) in tmp.items():
-                reste = re.sub(r" \d+$", "", reste)
+                reste = __import__("re").sub(r" \d+$", "", reste)  # (« re » est réassigné localement plus bas dans do_POST)
                 os.rename(t, os.path.join(base, f"{date}_{i * 100 + 100100:06d}_{reste}"))
             _git_sync_bg(f"reorder {state}")
             return self._json({"ok": True})
