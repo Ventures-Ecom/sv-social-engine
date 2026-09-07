@@ -10,6 +10,7 @@ Usage : python3 engine/generate_ai.py [nb_posts]
 """
 import base64
 import json
+import re
 import os
 import random
 import subprocess
@@ -42,7 +43,7 @@ def _livrer(d):
 sys.path.insert(0, ENGINE)
 import generate as core  # curl, fetch_products, fetch_image, cover, captions, state
 
-IMAGE_MODEL = "gemini-2.5-flash-image"
+IMAGE_MODEL = "gemini-3.1-flash-image"  # bascule 07/09/2026 (GO Laurie) — 2.5 dérivait de décor et inventait les dos
 MAX_GEN_PER_MONTH = 200  # relevé 01/09 (demande Laurie : le moteur ne doit JAMAIS s'arrêter) — prévoir recharge ~10 GBP/mois du crédit Gemini
 CHECK_MODEL = "gemini-3.6-flash"
 API = "https://generativelanguage.googleapis.com/v1beta/models"
