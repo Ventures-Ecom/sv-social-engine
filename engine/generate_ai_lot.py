@@ -30,8 +30,12 @@ if cible:
         g._progress(f"post demandé — {p['title'][:40]}")
         g.make_model_post(p, captions, state, key)
         core.save_state(state)
+        # 07/09/2026 (Laurie) : le mode ciblé fabrique aussi le carrousel « tour du produit » de la pièce demandée
+        g._progress(f"carrousel demandé — {p['title'][:40]}")
+        g.make_carousel_tour(p, captions, state, key)
+        core.save_state(state)
         g._progress("")
-        print("post ciblé produit ✅")
+        print("post + carrousel ciblés produits ✅")
         raise SystemExit(0)
     print(f"⚠️ produit « {cible} » introuvable dans le catalogue — lot normal à la place")
 
